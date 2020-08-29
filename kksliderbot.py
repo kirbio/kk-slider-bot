@@ -27,12 +27,20 @@ async def joinVoiceChannel(message,currentdj):
             return False
     return True
 
+flg_stop = False
+
 def check_queue():
-    global song_queue
+    global song_queue, flg_stop
 
     #if song queue is empty
     if not song_queue:
         return
+
+    #if manually called stop, stop advancing the queue, too.
+    if flg_stop:
+        flg_stop = False
+        return
+    
 
     #async with channel.typing():
     player = song_queue.pop(0)
@@ -75,7 +83,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    global current_voice_channel, song_queue
+    global current_voice_channel, song_queue, flg_stop
     
     # bot message
     if message.author == client.user:
@@ -136,8 +144,17 @@ async def on_message(message):
         if current_voice_channel==None:
             await channel.send('Currently not connect to Voice Channel.')
             return
-
+        
+        flg_stop = True
         current_voice_channel.stop()
+    elif util.checkBotCommand(message,'skip'):
+        
+        if current_voice_channel==None:
+            await channel.send('Currently not connect to Voice Channel.')
+            return
+        
+        current_voice_channel.stop()
+        
 
     elif util.checkBotCommand(message,'queue'):
         
