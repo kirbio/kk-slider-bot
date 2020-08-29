@@ -35,10 +35,10 @@ def check_queue():
         return
 
     #async with channel.typing():
-        player = song_queue.pop(0)
-        print('playing: {}'.format(player.title))
+    player = song_queue.pop(0)
+    print('playing: {}'.format(player.title))
         #player.start()
-        current_voice_channel.play(player, after=lambda e: check_queue())
+    current_voice_channel.play(player, after=lambda e: check_queue())
     #return channel.send('Now playing: {}'.format(player.title))
 
 async def playNextSongInQueue(channel):
