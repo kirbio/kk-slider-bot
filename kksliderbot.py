@@ -10,6 +10,7 @@ from youtube_dl.utils import DownloadError
 client = discord.Client()
 
 current_voice_channel = None
+current_status = None
 song_queue = []
 flg_stop = False
 
@@ -37,6 +38,8 @@ def songEndEvent(channel):
     if len(song_queue) > 0:
         song_queue.pop(0)
 
+    asyncio.run_coroutine_threadsafe(client.change_presence(status=discord.Status.idle, activity=None), client.loop)
+
     #if manually called stop, stop advancing the queue, too.
     if flg_stop:
         flg_stop = False
@@ -54,7 +57,7 @@ def songEndEvent(channel):
         
 
 async def songStartEvent(channel):
-    global song_queue
+    global song_queue, current_status
 
     print('starting song...')
     #if song queue is empty
@@ -69,6 +72,10 @@ async def songStartEvent(channel):
         current_voice_channel.play(player, after=lambda e: songEndEvent(channel))
     
     await channel.send(formatNowPlaying(player.title, player.data['duration'], dj))
+
+    # set bot status
+    current_status = discord.Game(name=player.title)
+    await client.change_presence(status=discord.Status.online, activity=current_status)
     
 
 @client.event
@@ -90,7 +97,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    global current_voice_channel, song_queue, flg_stop
+    global current_voice_channel, song_queue, flg_stop, current_status
     
     # bot message
     if message.author == client.user:
@@ -158,6 +165,7 @@ async def on_message(message):
             return
         
         current_voice_channel.pause()
+        await client.change_presence(status=discord.Status.do_not_disturb, activity=current_status)
         await channel.send(formatResponse('Paused'))
 
     elif checkBotCommand(message,'resume'):
@@ -170,6 +178,7 @@ async def on_message(message):
             await channel.send('Currently not paused')
             return
         current_voice_channel.resume()
+        await client.change_presence(status=discord.Status.online, activity=current_status)
         await channel.send(formatResponse('Resumed'))
 
 
@@ -227,6 +236,7 @@ async def on_message(message):
             await channel.send('This command can only be invoked by administrator.\nPlease call @Kirbio or @Sunny for help.')
         else:
             await client.logout()
+            await client.close()
 
     # Simple test command to check if the bot is not dead
     elif checkBotCommand(message,'ping','ping2'):
