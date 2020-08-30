@@ -99,6 +99,10 @@ async def on_ready():
 async def on_message(message):
     global current_voice_channel, song_queue, flg_stop, current_status
     
+    params = parse_parameters(message.content)
+    channel = message.channel
+    currentdj = message.author
+
     # bot message
     if message.author == client.user:
         return
@@ -107,15 +111,25 @@ async def on_message(message):
     if not message.content.startswith(BOT_PREFIX):
         return
 
-    params = parse_parameters(message.content)
+    #If the caller is not in the same VC as the bot, unless an admin
+    if not currentdj.voice is None:
+        if not current_voice_channel is None:
+            # print(currentdj.voice.channel)
+            # print(current_voice_channel.channel)
+            if currentdj.voice.channel != current_voice_channel.channel:
+                await message.channel.send('You are not in the same VC with the bot.')
+                return
+    else:
+        await message.channel.send('You are not connecting to VC right now.')
+        return
 
-    channel = message.channel
+    # COMMANDS
 
     if checkBotCommand(message,'grandad'):
         await channel.send(formatResponse('Fleentstones'))
 
     elif checkBotCommand(message,'play'):
-        currentdj = message.author
+        
 
         #Return if not connected to VC
         if not await joinVoiceChannel(message,currentdj):
