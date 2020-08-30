@@ -1,3 +1,5 @@
+import const
+
 BOT_PREFIX = '!'
 
 def checkBotCommand(message,*commands):
@@ -46,3 +48,6 @@ def formatQueueList(song_queue, current_voice_channel):
                 result += formatQueueItem(s.title, s.data['duration'], dj)
 
     return result
+
+def isAdminMessage(message):
+    return message.author.display_name in const.ADMIN_LIST

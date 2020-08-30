@@ -9,11 +9,9 @@ from youtube_dl.utils import DownloadError
 
 client = discord.Client()
 
-prefix = '$'
-
 current_voice_channel = None
-
 song_queue = []
+flg_stop = False
 
 def parse_parameters(content):
     return content.strip().split()[1:]
@@ -30,8 +28,6 @@ async def joinVoiceChannel(message,currentdj):
             await message.channel.send('You are not connecting to VC right now.')
             return False
     return True
-
-flg_stop = False
 
 def songEndEvent(channel):
     global song_queue, flg_stop, client
@@ -50,7 +46,6 @@ def songEndEvent(channel):
     if not song_queue:
         return
 
-    
     asyncio.run_coroutine_threadsafe(songStartEvent(channel), client.loop)
     # player, dj = song_queue[0]
     # print('playing: {} from {}'.format(player.title, dj))
@@ -110,7 +105,7 @@ async def on_message(message):
     channel = message.channel
 
     if checkBotCommand(message,'grandad'):
-        await channel.send('fleentstones')
+        await channel.send(formatResponse('Fleentstones'))
 
     elif checkBotCommand(message,'play'):
         currentdj = message.author
@@ -221,25 +216,27 @@ async def on_message(message):
         await channel.send(formatResponse('Cleared Queue'))
         
     elif checkBotCommand(message,'disconnect','dc'):
-        server = message.guild.voice_client
-        await server.disconnect(force=True)
-        current_voice_channel=None
-        print ('disconnected from vc')
+        if isAdminMessage(message):
+            server = message.guild.voice_client
+            await server.disconnect(force=True)
+            current_voice_channel=None
+            print('disconnected from vc')
 
     elif checkBotCommand(message,'logout'):
-        if False:#isAdminMessage(message):
+        if not isAdminMessage(message):
             await channel.send('This command can only be invoked by administrator.\nPlease call @Kirbio or @Sunny for help.')
         else:
             await client.logout()
 
     # Simple test command to check if the bot is not dead
     elif checkBotCommand(message,'ping','ping2'):
-        await channel.send('pong')
+        await channel.send(formatResponse('Pong'))
 
     elif checkBotCommand(message,'status'):
-        await channel.send('flg_stop'+ str(flg_stop))
-        await channel.send('queue'+ str(len(song_queue)))
-        await channel.send('is playing'+ str(current_voice_channel.is_playing()))
-        await channel.send('is pause'+ str(current_voice_channel.is_paused()))
+        if isAdminMessage(message):
+            await channel.send('flg_stop'+ str(flg_stop))
+            await channel.send('queue'+ str(len(song_queue)))
+            await channel.send('is playing'+ str(current_voice_channel.is_playing()))
+            await channel.send('is pause'+ str(current_voice_channel.is_paused()))
 
 client.run(const.BOT_TOKEN)
