@@ -1,6 +1,7 @@
 import discord
 import const
 import asyncio 
+import sys
 
 import youtubestreaming as yt
 from util import *
@@ -37,7 +38,8 @@ def songEndEvent(channel):
 
     print('ending song...')
     print(len(song_queue),flg_stop)
-    song_queue.pop(0)
+    if len(song_queue) > 0:
+        song_queue.pop(0)
 
     #if manually called stop, stop advancing the queue, too.
     if flg_stop:
@@ -70,9 +72,8 @@ async def songStartEvent(channel):
         player, dj = song_queue[0]
         print('playing: {} from {}'.format(player.title, dj))
         current_voice_channel.play(player, after=lambda e: songEndEvent(channel))
-        # current_voice_channel.play(player)
     
-    await channel.send(formatNowPlaying(player.title, dj))
+    await channel.send(formatNowPlaying(player.title, player.data['duration'], dj))
     
 
 @client.event
@@ -130,68 +131,94 @@ async def on_message(message):
                 print('queueing...')
                 player = await yt.YTDLSource.from_url(url,stream=True)
                 song_queue.append((player,currentdj.display_name))
-
+                
                 if len(song_queue) <= 1:          
                     await songStartEvent(channel)
                 else:
-                    await channel.send(formatQueueing(player.title, currentdj.display_name))
-            except:
+                    await channel.send(formatQueueing(player.title, player.data['duration'], currentdj.display_name))
+            except DownloadError:
                 await channel.send('Video not found or the player could not play this video')
-        
-            
-        
+            except:
+                await channel.send('Unexpected Errror : ' + sys.exc_info()[0].__name__)
+    
+    elif checkBotCommand(message, 'now', 'np', 'nowplaying'):
+        if len(song_queue) > 0:
+            player, dj = song_queue[0]
+            await channel.send(formatNowPlaying(player.title, player.data['duration'], dj))
+        else:
+            await channel.send('Currently not playing any song')
+
     elif checkBotCommand(message,'pause'):
 
         if current_voice_channel==None:
-            await channel.send('Currently not connect to Voice Channel.')
+            await channel.send('Currently not connect to Voice Channel')
             return
 
         if current_voice_channel.is_paused():
-            await channel.send('Currently already paused.')
+            await channel.send('Currently already paused')
             return
 
         if not current_voice_channel.is_playing():
-            await channel.send('Currently not playing any audio.')
+            await channel.send('Currently not playing any song')
             return
         
         current_voice_channel.pause()
-        
+        await channel.send(formatResponse('Paused'))
 
     elif checkBotCommand(message,'resume'):
         
         if current_voice_channel==None:
-            await channel.send('Currently not connect to Voice Channel.')
+            await channel.send('Currently not connect to Voice Channel')
             return
 
         if not current_voice_channel.is_paused():
-            await channel.send('Currently not paused.')
+            await channel.send('Currently not paused')
             return
         current_voice_channel.resume()
+        await channel.send(formatResponse('Resumed'))
+
+
     elif checkBotCommand(message,'stop'):
         print('stopping...')
+        if current_voice_channel==None:
+            await channel.send('Currently not connect to Voice Channel')
+            return
+        
+        flg_stop = True
+        current_voice_channel.stop()
+        await channel.send(formatResponse('Stopped'))
+
+    elif checkBotCommand(message,'skip'):
+        print('skipping...')
+        if current_voice_channel==None:
+            await channel.send('Currently not connect to Voice Channel')
+            return
+        
+        current_voice_channel.stop()
+        await channel.send(formatResponse('Skipped'))
+
+    elif checkBotCommand(message,'queue','q'):
+        
+        if len(song_queue)==0:
+            await channel.send("`The song queue is empty`")
+            return
+        
+        await channel.send(formatQueueList(song_queue, current_voice_channel))
+
+    elif checkBotCommand(message, 'clear', 'flush'):
+        print('clearing...')
         if current_voice_channel==None:
             await channel.send('Currently not connect to Voice Channel.')
             return
         
         flg_stop = True
-        current_voice_channel.stop()
-    elif checkBotCommand(message,'skip'):
-        print('skipping...')
-        if current_voice_channel==None:
-            await channel.send('Currently not connect to Voice Channel.')
-            return
-        
-        current_voice_channel.stop()
-        
 
-    elif checkBotCommand(message,'queue'):
-
-        if len(song_queue)==0:
-            result = "`The song queue is empty`"
-        else:
-            result = formatQueueList(song_queue, current_voice_channel)
+        async with channel.typing():
+            current_voice_channel.stop()
+            while len(song_queue) > 0:
+                song_queue.pop()
         
-        await channel.send(result)
+        await channel.send(formatResponse('Cleared Queue'))
         
     elif checkBotCommand(message,'disconnect','dc'):
         server = message.guild.voice_client
