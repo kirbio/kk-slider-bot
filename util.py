@@ -8,18 +8,26 @@ def checkBotCommand(message,*commands):
            break
     return result
 
-def formatNowPlaying(title, dj):
+def formatDuration(t):
+    return '{}:{:02d}'.format(t//60,t%60)
+
+def formatNowPlaying(title, duration, dj):
     result = ''
     result += '**NOW PLAYING :**\n'
-    result += ':loud_sound:  `{}` from {}\n'.format(title,dj)
+    result += ':loud_sound:  `{} ({})` from {}\n'.format(title,formatDuration(duration),dj)
     return result
 
-def formatQueueing(title, dj):
+def formatQueueing(title, duration, dj):
     result = ''
     result += '**QUEUE ADDED :**\n'
-    result += ':play_pause:  `{}` from {}\n'.format(title,dj)
+    result += ':play_pause:  `{} ({})` from {}\n'.format(title,formatDuration(duration),dj)
     return result
+
+def formatQueueItem(title, duration, dj):
+    return ':notes:  `{} ({})` from {}\n'.format(title, formatDuration(duration), dj)
     
+def formatResponse(text):
+    return '**{}**'.format(text.upper())
 
 def formatQueueList(song_queue, current_voice_channel):
 
@@ -27,14 +35,14 @@ def formatQueueList(song_queue, current_voice_channel):
     if not current_voice_channel.is_paused() and not current_voice_channel.is_playing():
         result += '**NEXT SONGS IN QUEUE :**\n'
         for s,dj in song_queue:
-            result += ':notes:  `{}` from {}\n'.format(s.title, dj)
+            result += formatQueueItem(s.title, s.data['duration'], dj)
     else:
         s, dj = song_queue[0]
-        result += formatNowPlaying(s.title, dj)
+        result += formatNowPlaying(s.title, s.data['duration'], dj)
         if len(song_queue) > 1:
             result += '\n'
             result += '**NEXT SONGS IN QUEUE :**\n'
             for s,dj in song_queue[1:]:
-                result += ':notes:  `{}` from {}\n'.format(s.title, dj)
+                result += formatQueueItem(s.title, s.data['duration'], dj)
 
     return result
