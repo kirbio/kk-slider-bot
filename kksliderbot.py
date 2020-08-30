@@ -1,5 +1,6 @@
 import discord
 import const
+import asyncio 
 
 import youtubestreaming as yt
 from util import *
@@ -31,10 +32,10 @@ async def joinVoiceChannel(message,currentdj):
 
 flg_stop = False
 
-def check_queue():
-    global song_queue, flg_stop
+def songEndEvent(channel):
+    global song_queue, flg_stop, client
 
-    print('checking queue...')
+    print('ending song...')
     print(len(song_queue),flg_stop)
     song_queue.pop(0)
 
@@ -47,16 +48,18 @@ def check_queue():
     if not song_queue:
         return
 
-    player, dj = song_queue[0]
-    print('playing: {} from {}'.format(player.title, dj))
-    current_voice_channel.play(player, after=lambda e: check_queue())
+    
+    asyncio.run_coroutine_threadsafe(songStartEvent(channel), client.loop)
+    # player, dj = song_queue[0]
+    # print('playing: {} from {}'.format(player.title, dj))
+    # current_voice_channel.play(player, after=lambda e: check_queue())
     #return channel.send('Now playing: {}'.format(player.title))
         
 
-async def playNextSongInQueue(channel):
+async def songStartEvent(channel):
     global song_queue
 
-    print('play next song...')
+    print('starting song...')
     #if song queue is empty
     if not song_queue:
         await channel.send('Please queue up some songs first!')
@@ -66,11 +69,10 @@ async def playNextSongInQueue(channel):
     async with channel.typing():
         player, dj = song_queue[0]
         print('playing: {} from {}'.format(player.title, dj))
-        current_voice_channel.play(player, after=lambda e: check_queue())
+        current_voice_channel.play(player, after=lambda e: songEndEvent(channel))
         # current_voice_channel.play(player)
     
     await channel.send(formatNowPlaying(player.title, dj))
-
     
 
 @client.event
@@ -120,7 +122,7 @@ async def on_message(message):
             if current_voice_channel.is_playing():
                 await channel.send('Currently playing audio. Please use `stop` to stop current song or `skip` to start next song immediately')
             else:
-                await playNextSongInQueue(channel)
+                await songStartEvent(channel)
         else:
             url = ' '.join(params)
         
@@ -130,7 +132,7 @@ async def on_message(message):
                 song_queue.append((player,currentdj.display_name))
 
                 if len(song_queue) <= 1:          
-                    await playNextSongInQueue(channel)
+                    await songStartEvent(channel)
                 else:
                     await channel.send(formatQueueing(player.title, currentdj.display_name))
             except:
