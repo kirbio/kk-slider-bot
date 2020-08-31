@@ -164,6 +164,13 @@ async def on_message(message):
         else:
             await channel.send('Currently not playing any song')
 
+    elif checkBotCommand(message, 'undo', 'dequeue', 'dq'):
+        if len(song_queue) > 1:
+            song_queue.pop()
+            await channel.send('Removed last song in queue')
+        else:
+            await channel.send('No song in queue log')
+
     elif checkBotCommand(message,'pause'):
 
         if current_voice_channel==None:
