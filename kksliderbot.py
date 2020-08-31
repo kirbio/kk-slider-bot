@@ -206,7 +206,7 @@ async def on_message(message):
         current_voice_channel.stop()
         await channel.send(formatResponse('Stopped'))
 
-    elif checkBotCommand(message,'skip'):
+    elif checkBotCommand(message,'skip','sk'):
         print('skipping...')
         if current_voice_channel==None:
             await channel.send('Currently not connect to Voice Channel')
@@ -215,7 +215,7 @@ async def on_message(message):
         current_voice_channel.stop()
         await channel.send(formatResponse('Skipped'))
 
-    elif checkBotCommand(message,'queue','q'):
+    elif checkBotCommand(message,'queue','q','list','ls'):
         
         if len(song_queue)==0:
             await channel.send("`The song queue is empty`")
