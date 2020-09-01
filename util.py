@@ -1,6 +1,7 @@
 import const
 
 BOT_PREFIX = '!'
+HQRIP_COMMAND = 'rip'
 
 def checkBotCommand(message,*commands):
     result = False

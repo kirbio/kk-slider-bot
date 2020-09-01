@@ -128,7 +128,7 @@ async def on_message(message):
     if checkBotCommand(message,'grandad'):
         await channel.send(formatResponse('Fleentstones'))
 
-    elif checkBotCommand(message,'play'):
+    elif checkBotCommand(message,'play',HQRIP_COMMAND):
         
 
         #Return if not connected to VC
@@ -142,6 +142,8 @@ async def on_message(message):
                 await songStartEvent(channel)
         else:
             url = ' '.join(params)
+            if checkBotCommand(message,HQRIP_COMMAND):
+                url += ' siivagunner'
         
             try:
                 print('queueing...')
@@ -170,6 +172,29 @@ async def on_message(message):
             await channel.send('Removed last song in queue')
         else:
             await channel.send('No song in queue log')
+
+    elif checkBotCommand(message, 'pop', 'remove'):
+        if len(params) > 0:
+            try:
+                index = int(params[0])
+            except ValueError:
+                await channel.send('Invalid index')
+                return
+
+            if index < 1:
+                await channel.send('Invalid index')
+                return
+            elif index > len(song_queue):
+                index = -1
+        else:
+            index = -1
+
+        if len(song_queue) > 1:
+            player, dj = song_queue.pop(index)
+            await channel.send('Removed {} from {}'.format(player.title, dj))
+        else:
+            await channel.send('No song in queue log')
+
 
     elif checkBotCommand(message,'pause'):
 
@@ -244,6 +269,9 @@ async def on_message(message):
                 song_queue.pop()
         
         await channel.send(formatResponse('Cleared Queue'))
+
+    elif checkBotCommand(message, 'help'):
+        await channel.send('https://www.youtube.com/watch?v=yD2FSwTy2lw')
         
     elif checkBotCommand(message,'disconnect','dc'):
         if isAdminMessage(message):
