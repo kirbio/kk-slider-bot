@@ -153,7 +153,7 @@ async def on_message(message):
                 if len(song_queue) <= 1:          
                     await songStartEvent(channel)
                 else:
-                    await channel.send(formatQueueing(player.title, player.data['duration'], currentdj.display_name))
+                    await channel.send(formatQueueing(player.title, player.data['duration'], currentdj.display_name, len(song_queue)-1))
             except DownloadError:
                 await channel.send('Video not found or the player could not play this video')
             except:
