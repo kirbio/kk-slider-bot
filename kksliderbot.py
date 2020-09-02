@@ -158,7 +158,8 @@ async def on_message(message):
                 await channel.send('Video not found or the player could not play this video')
             except:
                 await channel.send('Unexpected Errror : ' + sys.exc_info()[0].__name__)
-    
+                print(sys.exc_info()[0])
+                
     elif checkBotCommand(message, 'now', 'np', 'nowplaying'):
         if len(song_queue) > 0:
             player, dj = song_queue[0]
