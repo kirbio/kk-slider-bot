@@ -299,4 +299,7 @@ async def on_message(message):
             await channel.send('is playing'+ str(current_voice_channel.is_playing()))
             await channel.send('is pause'+ str(current_voice_channel.is_paused()))
 
+    else:
+        print('unknown command')
+
 client.run(const.BOT_TOKEN)
