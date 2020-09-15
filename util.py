@@ -4,12 +4,10 @@ BOT_PREFIX = '!'
 HQRIP_COMMAND = 'rip'
 
 def checkBotCommand(message,*commands):
-    result = False
     for command in commands:
-        if message.content.startswith(BOT_PREFIX+command):
-           result = True
-           break
-    return result
+        if message.content.split()[0] == BOT_PREFIX+command:
+           return True
+    return False
 
 def formatDuration(t):
     return '{}:{:02d}'.format(t//60,t%60)
