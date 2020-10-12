@@ -13,6 +13,7 @@ current_voice_channel = None
 current_status = None
 song_queue = []
 flg_stop = False
+flg_loop = False
 
 def parse_parameters(content):
     return content.strip().split()[1:]
@@ -34,30 +35,37 @@ async def joinVoiceChannel(message,currentdj):
         return True
 
 def songEndEvent(channel):
-    global song_queue, flg_stop, client
+    global song_queue, flg_stop, flg_loop, client
 
     print('ending song...')
-    print(len(song_queue),flg_stop)
-    if len(song_queue) > 0:
-        song_queue.pop(0)
+    # print(len(song_queue),flg_stop)
 
     asyncio.run_coroutine_threadsafe(client.change_presence(status=discord.Status.idle, activity=None), client.loop)
 
-    #if manually called stop, stop advancing the queue, too.
-    if flg_stop:
-        flg_stop = False
-        return
+    if len(song_queue) > 0:
+        curr_song = song_queue.pop(0)
 
-    #if song queue is empty
-    if not song_queue:
-        return
+    if flg_loop and not flg_stop:
+        print('looping...')
+        # pass
+        url = curr_song[0].data['id']
+        player = asyncio.run_coroutine_threadsafe(yt.YTDLSource.from_url(url,stream=True), client.loop)
+        song_queue.insert(0,(player,curr_song[1]))
+        print('loop queued')
+    else:
+
+
+        #if manually called stop, stop advancing the queue, too.
+        if flg_stop:
+            flg_stop = False
+            flg_loop = False
+            return
+
+        #if song queue is empty
+        if not song_queue:
+            return
 
     asyncio.run_coroutine_threadsafe(songStartEvent(channel), client.loop)
-    # player, dj = song_queue[0]
-    # print('playing: {} from {}'.format(player.title, dj))
-    # current_voice_channel.play(player, after=lambda e: check_queue())
-    #return channel.send('Now playing: {}'.format(player.title))
-        
 
 async def songStartEvent(channel):
     global song_queue, current_status
@@ -80,6 +88,22 @@ async def songStartEvent(channel):
     current_status = discord.Game(name=player.title)
     await client.change_presence(status=discord.Status.online, activity=current_status)
     
+async def playEvent(channel, url, currentdj):
+    global song_queue
+    try:
+        print('queueing...')
+        player = await yt.YTDLSource.from_url(url,stream=True)
+        song_queue.append((player,currentdj.display_name))
+        
+        if len(song_queue) <= 1:          
+            await songStartEvent(channel)
+        else:
+            await channel.send(formatQueueing(player.title, player.data['duration'], currentdj.display_name, len(song_queue)-1))
+    except DownloadError:
+        await channel.send('Video not found or the player could not play this video')
+    except:
+        await channel.send('Unexpected Errror : ' + sys.exc_info()[0].__name__)
+        print(sys.exc_info()[0])
 
 @client.event
 async def on_connect():
@@ -100,7 +124,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    global current_voice_channel, song_queue, flg_stop, current_status
+    global current_voice_channel, song_queue, flg_loop, flg_stop, current_status
     
     params = parse_parameters(message.content)
     channel = message.channel
@@ -132,8 +156,6 @@ async def on_message(message):
         await channel.send(formatResponse('Fleentstones'))
 
     elif checkBotCommand(message,'play',HQRIP_COMMAND):
-        
-
         #Return if not connected to VC
         if not await joinVoiceChannel(message,currentdj):
             return
@@ -147,22 +169,23 @@ async def on_message(message):
             url = ' '.join(params)
             if checkBotCommand(message,HQRIP_COMMAND):
                 url += ' siivagunner'
+            await playEvent(channel, url, currentdj)
         
-            try:
-                print('queueing...')
-                player = await yt.YTDLSource.from_url(url,stream=True)
-                song_queue.append((player,currentdj.display_name))
                 
-                if len(song_queue) <= 1:          
-                    await songStartEvent(channel)
-                else:
-                    await channel.send(formatQueueing(player.title, player.data['duration'], currentdj.display_name, len(song_queue)-1))
-            except DownloadError:
-                await channel.send('Video not found or the player could not play this video')
-            except:
-                await channel.send('Unexpected Errror : ' + sys.exc_info()[0].__name__)
-                print(sys.exc_info()[0])
-                
+    elif checkBotCommand(message, 'loop'):
+        #Return if not connected to VC
+        if not await joinVoiceChannel(message,currentdj):
+            return
+
+        if len(params) > 0: #loop <URL> - play <URL> with loop
+            flg_loop = True
+            url = ' '.join(params)
+            await playEvent(channel, url, currentdj)
+        else:
+            flg_loop = not flg_loop
+        print('flg_loop:',flg_loop)
+
+
     elif checkBotCommand(message, 'now', 'np', 'nowplaying'):
         if len(song_queue) > 0:
             player, dj = song_queue[0]
@@ -297,6 +320,7 @@ async def on_message(message):
 
     elif checkBotCommand(message,'status'):
         if isAdminMessage(message):
+            await channel.send('flg_loop'+ str(flg_loop))
             await channel.send('flg_stop'+ str(flg_stop))
             await channel.send('queue'+ str(len(song_queue)))
             await channel.send('is playing'+ str(current_voice_channel.is_playing()))
