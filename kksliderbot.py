@@ -20,6 +20,7 @@ def parse_parameters(content):
 #Join voice channel if it has not, otherwise do nothing.
 async def joinVoiceChannel(message,currentdj):
     global current_voice_channel
+    print('joining voice...')
     if current_voice_channel is None:
         if currentdj.voice is not None:
             current_voice_channel = await currentdj.voice.channel.connect()
@@ -28,7 +29,9 @@ async def joinVoiceChannel(message,currentdj):
         else:
             await message.channel.send('You are not connecting to VC right now.')
             return False
-    return True
+    else:
+        print('already connected')
+        return True
 
 def songEndEvent(channel):
     global song_queue, flg_stop, client
