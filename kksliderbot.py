@@ -48,9 +48,15 @@ def songEndEvent(channel):
     if flg_loop and not flg_stop:
         print('looping...')
         # pass
+        #url = curr_song[0].data['id']
+        #player = asyncio.run_coroutine_threadsafe(yt.YTDLSource.from_url(url,stream=True), client.loop)
+        #song_queue.insert(0,(player,curr_song[1]))
         url = curr_song[0].data['id']
-        player = asyncio.run_coroutine_threadsafe(yt.YTDLSource.from_url(url,stream=True), client.loop)
-        song_queue.insert(0,(player,curr_song[1]))
+        currentdj = curr_song[1]
+        print(channel)
+        print(url)
+        print(currentdj)
+        asyncio.run_coroutine_threadsafe(playEvent(channel, url, currentdj), client.loop)
         print('loop queued')
     else:
 
@@ -93,12 +99,12 @@ async def playEvent(channel, url, currentdj):
     try:
         print('queueing...')
         player = await yt.YTDLSource.from_url(url,stream=True)
-        song_queue.append((player,currentdj.display_name))
+        song_queue.append((player,currentdj))
         
         if len(song_queue) <= 1:          
             await songStartEvent(channel)
         else:
-            await channel.send(formatQueueing(player.title, player.data['duration'], currentdj.display_name, len(song_queue)-1))
+            await channel.send(formatQueueing(player.title, player.data['duration'], currentdj, len(song_queue)-1))
     except DownloadError:
         await channel.send('Video not found or the player could not play this video')
     except:
@@ -169,7 +175,7 @@ async def on_message(message):
             url = ' '.join(params)
             if checkBotCommand(message,HQRIP_COMMAND):
                 url += ' siivagunner'
-            await playEvent(channel, url, currentdj)
+            await playEvent(channel, url, currentdj.display_name)
         
                 
     elif checkBotCommand(message, 'loop'):
@@ -180,7 +186,7 @@ async def on_message(message):
         if len(params) > 0: #loop <URL> - play <URL> with loop
             flg_loop = True
             url = ' '.join(params)
-            await playEvent(channel, url, currentdj)
+            await playEvent(channel, url, currentdj.display_name)
         else:
             flg_loop = not flg_loop
         print('flg_loop:',flg_loop)
