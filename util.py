@@ -16,11 +16,12 @@ def formatNumber(number):
     mapping = {0 : 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6:'six',7:'seven',8:'eight',9:'nine',10:'keycap_ten'}
     return mapping[number]
 
-def formatNowPlaying(title, duration, dj, loop=False):
+def formatNowPlaying(title, duration, dj, loop=False, header=True):
     result = ''
-    result += '**NOW PLAYING :**\n'
-    icon = 'repeat' if loop else 'loud_sound'
-    result += ':{}:  `{} ({})` from {}\n'.format(icon,title,formatDuration(duration),dj)
+    if header:
+        result += '**NOW PLAYING :**\n'
+    looping = ':repeat:' if loop else ''
+    result += ':loud_sound:{}  `{} ({})` from {}\n'.format(looping,title,formatDuration(duration),dj)
     return result
 
 def formatQueueItem(title, duration, dj, number, loop=False):
@@ -40,20 +41,16 @@ def formatQueueList(song_queue, current_voice_channel, loop):
 
     result = '**QUEUE LIST**\n'
     if not current_voice_channel.is_paused() and not current_voice_channel.is_playing():
-        # result += '**NEXT SONGS IN QUEUE :**\n'
         for i,x in enumerate(song_queue):
             s,dj = x[0],x[1]
             result += formatQueueItem(s['title'], s['duration'], dj, i+1, s['loop'])
     else:
         s, dj = song_queue[0]
-        result += formatNowPlaying(s['title'], s['duration'], dj, loop)
+        result += formatNowPlaying(s['title'], s['duration'], dj, loop, header=False)
         if len(song_queue) > 1:
-            result += '\n'
-            result += '**NEXT SONGS IN QUEUE :**\n'
             for i,x in enumerate(song_queue[1:]):
                 s,dj = x[0],x[1]
                 result += formatQueueItem(s['title'], s['duration'], dj, i+1, s['loop'])
-
     return result
 
 def isAdminMessage(message):
