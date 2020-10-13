@@ -61,16 +61,18 @@ def songEndEvent(channel):
     asyncio.run_coroutine_threadsafe(songStartEvent(channel), client.loop)
 
 async def songStartEvent(channel):
-    global song_queue, current_status
+    global song_queue, current_status, flg_loop
 
     print('starting song...')
     #if song queue is empty
     if not song_queue:
         await channel.send('Please queue up some songs first!')
         return
-    
+
     async with channel.typing():
         song, dj = song_queue[0]
+        if song['loop']:
+            flg_loop = True
         player = await yt.YTDLSource.from_url(song['id'],stream=True)
         # print('playing: {} from {}'.format(player.title, dj))
         current_voice_channel.play(player, after=lambda e: songEndEvent(channel))
@@ -80,7 +82,7 @@ async def songStartEvent(channel):
         await client.change_presence(status=discord.Status.online, activity=current_status)
         await channel.send(formatNowPlaying(song['title'], song['duration'], dj, flg_loop))
     
-async def playEvent(channel, url, currentdj):
+async def playEvent(channel, url, currentdj, loop=False):
     global song_queue
     try:
         print('queueing...')
@@ -91,6 +93,7 @@ async def playEvent(channel, url, currentdj):
         song keys : (['id', 'uploader', 'uploader_id', 'uploader_url', 'channel_id', 'channel_url', 'upload_date', 'license', 'creator', 'title', 'alt_title', 'thumbnails', 'description', 'categories', 'tags', 'subtitles', 'automatic_captions', 'duration', 'age_limit', 'annotations', 'chapters', 'webpage_url', 'view_count', 'like_count', 'dislike_count', 'average_rating', 'formats', 'is_live', 'start_time', 'end_time', 'series', 'season_number', 'episode_number', 'track', 'artist', 'album', 'release_date', 'release_year', 'extractor', 'webpage_url_basename', 'extractor_key', 'n_entries', 'playlist', 'playlist_id', 'playlist_title', 'playlist_uploader', 'playlist_uploader_id', 'playlist_index', 'thumbnail', 'display_id', 'requested_subtitles', 'format_id', 'url', 'player_url', 'ext', 'format_note', 'acodec', 'abr', 'container', 'asr', 'filesize', 'fps', 'height', 'tbr', 'width', 'vcodec', 'downloader_options', 'format', 'protocol', 'http_headers'])
         '''
         print('queued', song['title'], song['duration'])
+        song['loop'] = loop
         song_queue.append((song, currentdj))
 
         if len(song_queue) <= 1:          
@@ -176,13 +179,12 @@ async def on_message(message):
             return
 
         if len(params) > 0: #loop <URL> - play <URL> with loop
-            flg_loop = True
             url = ' '.join(params)
-            await playEvent(channel, url, currentdj.display_name)
+            await playEvent(channel, url, currentdj.display_name, loop=True)
         else:
             flg_loop = not flg_loop
             await channel.send('Loop current song: {}'.format(flg_loop))
-        print('flg_loop:',flg_loop)
+            print('flg_loop:',flg_loop)
 
 
     elif checkBotCommand(message, 'now', 'np', 'nowplaying'):
