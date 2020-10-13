@@ -42,34 +42,21 @@ def songEndEvent(channel):
 
     asyncio.run_coroutine_threadsafe(client.change_presence(status=discord.Status.idle, activity=None), client.loop)
 
-    if len(song_queue) > 0:
-        curr_song = song_queue.pop(0)
-
-    if flg_loop and not flg_stop:
-        print('looping...')
-        # pass
-        #url = curr_song[0].data['id']
-        #player = asyncio.run_coroutine_threadsafe(yt.YTDLSource.from_url(url,stream=True), client.loop)
-        #song_queue.insert(0,(player,curr_song[1]))
-        url = curr_song[0].data['id']
-        currentdj = curr_song[1]
-        print(channel)
-        print(url)
-        print(currentdj)
-        asyncio.run_coroutine_threadsafe(playEvent(channel, url, currentdj), client.loop)
-        print('loop queued')
+    if not flg_loop or flg_stop:
+        if len(song_queue) > 0:
+            curr_song = song_queue.pop(0)  
     else:
+        print('looping...')
 
+    #if manually called stop, stop advancing the queue, too.
+    if flg_stop:
+        flg_stop = False
+        flg_loop = False
+        return
 
-        #if manually called stop, stop advancing the queue, too.
-        if flg_stop:
-            flg_stop = False
-            flg_loop = False
-            return
-
-        #if song queue is empty
-        if not song_queue:
-            return
+    #if song queue is empty
+    if not song_queue:
+        return
 
     asyncio.run_coroutine_threadsafe(songStartEvent(channel), client.loop)
 
@@ -82,33 +69,38 @@ async def songStartEvent(channel):
         await channel.send('Please queue up some songs first!')
         return
     
-
     async with channel.typing():
-        player, dj = song_queue[0]
-        print('playing: {} from {}'.format(player.title, dj))
+        song, dj = song_queue[0]
+        player = await yt.YTDLSource.from_url(song['id'],stream=True)
+        # print('playing: {} from {}'.format(player.title, dj))
         current_voice_channel.play(player, after=lambda e: songEndEvent(channel))
-    
-    await channel.send(formatNowPlaying(player.title, player.data['duration'], dj))
 
-    # set bot status
-    current_status = discord.Game(name=player.title)
-    await client.change_presence(status=discord.Status.online, activity=current_status)
+        # set bot status
+        current_status = discord.Game(name=song['title'])
+        await client.change_presence(status=discord.Status.online, activity=current_status)
+        await channel.send(formatNowPlaying(song['title'], song['duration'], dj, flg_loop))
     
 async def playEvent(channel, url, currentdj):
     global song_queue
     try:
         print('queueing...')
-        player = await yt.YTDLSource.from_url(url,stream=True)
-        song_queue.append((player,currentdj))
-        
+        # player = await yt.YTDLSource.from_url(url,stream=True)
+        # song_queue.append((player,currentdj))
+        song = yt.extract_info(url)
+        '''
+        song keys : (['id', 'uploader', 'uploader_id', 'uploader_url', 'channel_id', 'channel_url', 'upload_date', 'license', 'creator', 'title', 'alt_title', 'thumbnails', 'description', 'categories', 'tags', 'subtitles', 'automatic_captions', 'duration', 'age_limit', 'annotations', 'chapters', 'webpage_url', 'view_count', 'like_count', 'dislike_count', 'average_rating', 'formats', 'is_live', 'start_time', 'end_time', 'series', 'season_number', 'episode_number', 'track', 'artist', 'album', 'release_date', 'release_year', 'extractor', 'webpage_url_basename', 'extractor_key', 'n_entries', 'playlist', 'playlist_id', 'playlist_title', 'playlist_uploader', 'playlist_uploader_id', 'playlist_index', 'thumbnail', 'display_id', 'requested_subtitles', 'format_id', 'url', 'player_url', 'ext', 'format_note', 'acodec', 'abr', 'container', 'asr', 'filesize', 'fps', 'height', 'tbr', 'width', 'vcodec', 'downloader_options', 'format', 'protocol', 'http_headers'])
+        '''
+        print('queued', song['title'], song['duration'])
+        song_queue.append((song, currentdj))
+
         if len(song_queue) <= 1:          
             await songStartEvent(channel)
         else:
-            await channel.send(formatQueueing(player.title, player.data['duration'], currentdj, len(song_queue)-1))
-    except DownloadError:
-        await channel.send('Video not found or the player could not play this video')
+            await channel.send(formatQueueing(song['title'], song['duration'], currentdj, len(song_queue)-1))
+    # except DownloadError:
+        # await channel.send('Video not found or the player could not play this video')
     except:
-        await channel.send('Unexpected Errror : ' + sys.exc_info()[0].__name__)
+        await channel.send('Unexpected Error : ' + sys.exc_info()[0].__name__)
         print(sys.exc_info()[0])
 
 @client.event
@@ -189,13 +181,14 @@ async def on_message(message):
             await playEvent(channel, url, currentdj.display_name)
         else:
             flg_loop = not flg_loop
+            await channel.send('Loop current song: {}'.format(flg_loop))
         print('flg_loop:',flg_loop)
 
 
     elif checkBotCommand(message, 'now', 'np', 'nowplaying'):
         if len(song_queue) > 0:
-            player, dj = song_queue[0]
-            await channel.send(formatNowPlaying(player.title, player.data['duration'], dj))
+            song, dj = song_queue[0]
+            await channel.send(formatNowPlaying(song['title'], song['duration'], dj, flg_loop))
         else:
             await channel.send('Currently not playing any song')
 
@@ -223,8 +216,8 @@ async def on_message(message):
             index = -1
 
         if len(song_queue) > 1:
-            player, dj = song_queue.pop(index)
-            await channel.send('Removed {} from {}'.format(player.title, dj))
+            song, dj = song_queue.pop(index)
+            await channel.send('Removed {} from {}'.format(song['title'], dj))
         else:
             await channel.send('No song in queue log')
 
@@ -276,7 +269,8 @@ async def on_message(message):
         if current_voice_channel==None:
             await channel.send('Currently not connect to Voice Channel')
             return
-        
+        if flg_loop:
+            flg_loop = False
         current_voice_channel.stop()
         await channel.send(formatResponse('Skipped'))
 
@@ -286,7 +280,7 @@ async def on_message(message):
             await channel.send("`The song queue is empty`")
             return
         
-        await channel.send(formatQueueList(song_queue, current_voice_channel))
+        await channel.send(formatQueueList(song_queue, current_voice_channel, flg_loop))
 
     elif checkBotCommand(message, 'clear', 'flush'):
         print('clearing...')

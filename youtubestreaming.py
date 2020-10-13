@@ -45,3 +45,9 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+
+def extract_info(url):
+    data = ytdl.extract_info(url, download=False)
+    if 'entries' in data:
+        data = data['entries'][0]
+    return data
