@@ -69,18 +69,19 @@ async def songStartEvent(channel):
         await channel.send('Please queue up some songs first!')
         return
 
+    song, dj = song_queue[0]
+    if song['loop']:
+        flg_loop = True
+
     async with channel.typing():
-        song, dj = song_queue[0]
-        if song['loop']:
-            flg_loop = True
         player = await yt.YTDLSource.from_url(song['id'],stream=True)
         # print('playing: {} from {}'.format(player.title, dj))
         current_voice_channel.play(player, after=lambda e: songEndEvent(channel))
-
-        # set bot status
-        current_status = discord.Game(name=song['title'])
-        await client.change_presence(status=discord.Status.online, activity=current_status)
         await channel.send(formatNowPlaying(song['title'], song['duration'], dj, flg_loop))
+
+    # set bot status
+    current_status = discord.Game(name=song['title'])
+    await client.change_presence(status=discord.Status.online, activity=current_status)
     
 async def playEvent(channel, url, currentdj, loop=False):
     global song_queue
@@ -105,6 +106,11 @@ async def playEvent(channel, url, currentdj, loop=False):
     except:
         await channel.send('Unexpected Error : ' + sys.exc_info()[0].__name__)
         print(sys.exc_info()[0])
+
+async def resumeEvent(channel):
+    current_voice_channel.resume()
+    await client.change_presence(status=discord.Status.online, activity=current_status)
+    await channel.send(formatResponse('Resumed'))
 
 @client.event
 async def on_connect():
@@ -164,6 +170,8 @@ async def on_message(message):
         if len(params) == 0:
             if current_voice_channel.is_playing():
                 await channel.send('Currently playing audio. Please use `stop` to stop current song or `skip` to start next song immediately')
+            elif current_voice_channel.is_paused():
+                await resumeEvent(channel)
             else:
                 await songStartEvent(channel)
         else:
@@ -251,10 +259,7 @@ async def on_message(message):
         if not current_voice_channel.is_paused():
             await channel.send('Currently not paused')
             return
-        current_voice_channel.resume()
-        await client.change_presence(status=discord.Status.online, activity=current_status)
-        await channel.send(formatResponse('Resumed'))
-
+        await resumeEvent(channel)
 
     elif checkBotCommand(message,'stop'):
         print('stopping...')
