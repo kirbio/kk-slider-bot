@@ -23,26 +23,27 @@ def formatNowPlaying(title, duration, dj, loop=False):
     result += ':{}:  `{} ({})` from {}\n'.format(icon,title,formatDuration(duration),dj)
     return result
 
-def formatQueueing(title, duration, dj, number):
+def formatQueueItem(title, duration, dj, number, loop=False):
+    looping = ':repeat:' if loop else ''
+    return ':{}:{}  `{} ({})` from {}\n'.format(formatNumber(number), looping, title, formatDuration(duration), dj)
+
+def formatQueueing(title, duration, dj, number, loop=False):
     result = ''
     result += '**QUEUED :**\n'
-    result += ':{}:  `{} ({})` from {}\n'.format(formatNumber(number),title,formatDuration(duration),dj)
+    result += formatQueueItem(title, duration, dj, number, loop)
     return result
-
-def formatQueueItem(title, duration, dj, number):
-    return ':{}:  `{} ({})` from {}\n'.format(formatNumber(number), title, formatDuration(duration), dj)
     
 def formatResponse(text):
     return '**{}**'.format(text.upper())
 
 def formatQueueList(song_queue, current_voice_channel, loop):
 
-    result = ''
+    result = '**QUEUE LIST**\n'
     if not current_voice_channel.is_paused() and not current_voice_channel.is_playing():
-        result += '**NEXT SONGS IN QUEUE :**\n'
+        # result += '**NEXT SONGS IN QUEUE :**\n'
         for i,x in enumerate(song_queue):
             s,dj = x[0],x[1]
-            result += formatQueueItem(s['title'], s['duration'], dj, i+1)
+            result += formatQueueItem(s['title'], s['duration'], dj, i+1, s['loop'])
     else:
         s, dj = song_queue[0]
         result += formatNowPlaying(s['title'], s['duration'], dj, loop)
@@ -51,7 +52,7 @@ def formatQueueList(song_queue, current_voice_channel, loop):
             result += '**NEXT SONGS IN QUEUE :**\n'
             for i,x in enumerate(song_queue[1:]):
                 s,dj = x[0],x[1]
-                result += formatQueueItem(s['title'], s['duration'], dj, i+1)
+                result += formatQueueItem(s['title'], s['duration'], dj, i+1, s['loop'])
 
     return result
 

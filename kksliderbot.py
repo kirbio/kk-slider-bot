@@ -99,7 +99,7 @@ async def playEvent(channel, url, currentdj, loop=False):
         if len(song_queue) <= 1:          
             await songStartEvent(channel)
         else:
-            await channel.send(formatQueueing(song['title'], song['duration'], currentdj, len(song_queue)-1))
+            await channel.send(formatQueueing(song['title'], song['duration'], currentdj, len(song_queue)-1, song['loop']))
     # except DownloadError:
         # await channel.send('Video not found or the player could not play this video')
     except:
