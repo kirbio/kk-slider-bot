@@ -202,6 +202,14 @@ async def on_message(message):
         else:
             await channel.send('Currently not playing any song')
 
+    elif checkBotCommand(message, 'link', 'info'):
+        if len(song_queue) > 0:
+            song, dj = song_queue[0]
+            print(song)
+            await channel.send(song['webpage_url'])
+        else:
+            await channel.send('Currently not playing any song')
+
     elif checkBotCommand(message, 'undo', 'dequeue', 'dq'):
         if len(song_queue) > 1:
             song_queue.pop()
