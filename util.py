@@ -10,6 +10,8 @@ def checkBotCommand(message,*commands):
     return False
 
 def formatDuration(t):
+    if type(t) == float:
+        t = int(t)
     return '{}:{:02d}'.format(t//60,t%60)
 
 def formatNumber(number):
