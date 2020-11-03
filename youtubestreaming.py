@@ -49,5 +49,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 def extract_info(url):
     data = ytdl.extract_info(url, download=False)
     if 'entries' in data:
-        data = data['entries'][0]
-    return data
+        print('playlist found : {} videos'.format(len(data['entries'])))
+        return data['entries']
+        # data = data['entries'][0]
+    return [data]
