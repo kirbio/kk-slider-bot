@@ -1,7 +1,10 @@
 import const
+from collections import defaultdict
 
 BOT_PREFIX = '!'
 HQRIP_COMMAND = 'rip'
+mapping = defaultdict(lambda: 'asterisk')
+mapping.update({0 : 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6:'six',7:'seven',8:'eight',9:'nine',10:'keycap_ten'})
 
 def checkBotCommand(message,*commands):
     for command in commands:
@@ -15,7 +18,7 @@ def formatDuration(t):
     return '{}:{:02d}'.format(t//60,t%60)
 
 def formatNumber(number):
-    mapping = {0 : 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6:'six',7:'seven',8:'eight',9:'nine',10:'keycap_ten'}
+    global mapping
     return mapping[number]
 
 def formatNowPlaying(title, duration, dj, loop=False, header=True):
