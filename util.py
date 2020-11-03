@@ -56,7 +56,7 @@ def formatQueueList(song_queue, current_voice_channel, loop):
             for i,x in enumerate(song_queue[1:]):
                 s,dj = x[0],x[1]
                 result += formatQueueItem(s['title'], s['duration'], dj, i+1, s['loop'])
-    return result
+    return result[:2000]
 
 def isAdminMessage(message):
     return message.author.display_name in const.ADMIN_LIST
