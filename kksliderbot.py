@@ -2,6 +2,7 @@ import discord
 import const
 import asyncio 
 import sys
+import traceback
 
 import youtubestreaming as yt
 from util import *
@@ -86,6 +87,7 @@ async def songStartEvent(channel):
 async def playEvent(channel, url, currentdj, loop=False):
     global song_queue
     try:
+        
         print('queueing...')
         # player = await yt.YTDLSource.from_url(url,stream=True)
         # song_queue.append((player,currentdj))
@@ -93,21 +95,30 @@ async def playEvent(channel, url, currentdj, loop=False):
         '''
         song keys : (['id', 'uploader', 'uploader_id', 'uploader_url', 'channel_id', 'channel_url', 'upload_date', 'license', 'creator', 'title', 'alt_title', 'thumbnails', 'description', 'categories', 'tags', 'subtitles', 'automatic_captions', 'duration', 'age_limit', 'annotations', 'chapters', 'webpage_url', 'view_count', 'like_count', 'dislike_count', 'average_rating', 'formats', 'is_live', 'start_time', 'end_time', 'series', 'season_number', 'episode_number', 'track', 'artist', 'album', 'release_date', 'release_year', 'extractor', 'webpage_url_basename', 'extractor_key', 'n_entries', 'playlist', 'playlist_id', 'playlist_title', 'playlist_uploader', 'playlist_uploader_id', 'playlist_index', 'thumbnail', 'display_id', 'requested_subtitles', 'format_id', 'url', 'player_url', 'ext', 'format_note', 'acodec', 'abr', 'container', 'asr', 'filesize', 'fps', 'height', 'tbr', 'width', 'vcodec', 'downloader_options', 'format', 'protocol', 'http_headers'])
         '''
+        #if queueing a playlist, send a notification
+        if len(song_list) > 1:
+            await channel.send('Queueing a playlist...',delete_after=5)
+
+        # queue a song / playlist
         len_before = len(song_queue)
         for song in song_list:
             print('queued', song['title'], song['duration'])
             song['loop'] = loop
             song_queue.append((song, currentdj))
 
+        #garbage collection
+        del song_list
+
+        #if queue empty before, start now
+        #else send a queue message
         if len_before == 0:          
             await songStartEvent(channel)
         else:
             await channel.send(formatQueueing(song['title'], song['duration'], currentdj, len(song_queue)-1, song['loop']))
-    # except DownloadError:
-        # await channel.send('Video not found or the player could not play this video')
+
     except:
         await channel.send('Unexpected Error : ' + sys.exc_info()[0].__name__)
-        print(sys.exc_info()[0])
+        print(traceback.print_exc())
 
 async def resumeEvent(channel):
     current_voice_channel.resume()
