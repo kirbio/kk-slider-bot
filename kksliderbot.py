@@ -169,6 +169,9 @@ async def on_message(message):
             if currentdj.voice.channel != current_voice_channel.channel:
                 await message.channel.send('You are not in the same VC with the bot.')
                 return
+        else:
+            #If bot has not join VC yet, do it now (and should be called once)
+            await joinVoiceChannel(message,currentdj)
     else:
         await message.channel.send('You are not connecting to VC right now.')
         return
@@ -179,9 +182,6 @@ async def on_message(message):
         await channel.send(formatResponse('Fleentstones'))
 
     elif checkBotCommand(message,'play',HQRIP_COMMAND):
-        #Return if not connected to VC
-                if not await joinVoiceChannel(message,currentdj):
-            return
         
         if len(params) == 0:
             if current_voice_channel.is_playing():
@@ -198,10 +198,6 @@ async def on_message(message):
         
                 
     elif checkBotCommand(message, 'loop'):
-        #Return if not connected to VC
-        if not await joinVoiceChannel(message,currentdj):
-            return
-
         if len(params) > 0: #loop <URL> - play <URL> with loop
             url = ' '.join(params)
             await playEvent(channel, url, currentdj.display_name, loop=True)
