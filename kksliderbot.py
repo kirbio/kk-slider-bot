@@ -341,6 +341,7 @@ async def on_message(message):
     elif checkBotCommand(message,'disconnect','dc','logout'):
         if isAdminMessage(message):
             server = message.guild.voice_client
+            await client.change_presence(status=discord.Status.offline, activity=None)
             await server.disconnect(force=True)
             current_voice_channel=None
             print('disconnected from vc')
