@@ -324,8 +324,19 @@ async def on_message(message):
         
         await channel.send(formatResponse('Cleared Queue'))
 
+    # Meme shortcut command
     elif checkBotCommand(message, 'help'):
-        await channel.send('https://www.youtube.com/watch?v=yD2FSwTy2lw')
+        //no one to help
+        await playEvent(channel, 'https://www.youtube.com/watch?v=yD2FSwTy2lw', currentdj.display_name)
+
+    elif checkBotCommand(message, 'pc'):
+        //pe cimpoi
+        await playEvent(channel, 'https://www.youtube.com/watch?v=Z0DO0XyS8Ko', currentdj.display_name)
+
+    elif checkBotCommand(message, 'pcc'):
+        //pe cimpoi cover
+        await playEvent(channel, 'https://www.youtube.com/watch?v=3H6QaUYVsVM', currentdj.display_name)
+        
    
     elif checkBotCommand(message,'disconnect','dc','logout'):
         if isAdminMessage(message):
