@@ -180,9 +180,9 @@ async def on_message(message):
 
     elif checkBotCommand(message,'play',HQRIP_COMMAND):
         #Return if not connected to VC
-        if not await joinVoiceChannel(message,currentdj):
+                if not await joinVoiceChannel(message,currentdj):
             return
-
+        
         if len(params) == 0:
             if current_voice_channel.is_playing():
                 await channel.send('Currently playing audio. Please use `stop` to stop current song or `skip` to start next song immediately')
@@ -330,20 +330,18 @@ async def on_message(message):
 
     elif checkBotCommand(message, 'help'):
         await channel.send('https://www.youtube.com/watch?v=yD2FSwTy2lw')
-        
-    elif checkBotCommand(message,'disconnect','dc'):
+   
+    elif checkBotCommand(message,'disconnect','dc','logout'):
         if isAdminMessage(message):
             server = message.guild.voice_client
             await server.disconnect(force=True)
             current_voice_channel=None
             print('disconnected from vc')
-
-    elif checkBotCommand(message,'logout'):
-        if not isAdminMessage(message):
-            await channel.send('This command can only be invoked by administrator.\nPlease call @Kirbio or @Sunny for help.')
-        else:
             await client.logout()
             await client.close()
+            print('logout')
+        else:
+            await channel.send('This command can only be invoked by administrator.\nPlease call @Kirbio or @Sunny for help.')
 
     # Simple test command to check if the bot is not dead
     elif checkBotCommand(message,'ping','ping2'):
