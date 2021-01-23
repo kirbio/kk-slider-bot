@@ -105,6 +105,10 @@ async def playEvent(channel, url, currentdj, loop=False):
             song['loop'] = loop
             song_queue.append((song, currentdj))
 
+        if len(song_list) <= 0:
+            await channel.send('Playlist is empty')
+            return
+
         #garbage collection
         del song_list
 
