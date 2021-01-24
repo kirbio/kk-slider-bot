@@ -172,6 +172,36 @@ async def clear(ctx: Context):
 
     await ctx.send(formatResponse('Cleared Queue'))     
 
+# MEME
+@bot.command()
+@commands.check(is_in_same_vc)
+async def rip(ctx: Context, *args):
+    await join_voice(ctx)
+    url = ' '.join(args) + ' siivagunner'
+    await play_song(ctx, url, song_queue)
+
+@bot.command(aliases=['h'])
+@commands.check(is_in_same_vc)
+async def _help(ctx: Context, *args):
+    await join_voice(ctx)
+    url = 'yD2FSwTy2lw'
+    await play_song(ctx, url, song_queue)
+
+@bot.command()
+@commands.check(is_in_same_vc)
+async def pc(ctx: Context, *args):
+    await join_voice(ctx)
+    url = 'Z0DO0XyS8Ko'
+    song = yt.extract_info(url)[0]
+    await play_song(ctx, url, song_queue, metadata={'title':song['title'],'duration':song['duration']})
+
+@bot.command()
+@commands.check(is_in_same_vc)
+async def pcc(ctx: Context, *args):
+    await join_voice(ctx)
+    url = '3H6QaUYVsVM' 
+    song = yt.extract_info(url)[0]
+    await play_song(ctx, url, song_queue, metadata={'title':song['title'],'duration':song['duration']})
 
 #Join voice channel if it has not, otherwise do nothing.
 async def join_voice(ctx):
