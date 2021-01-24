@@ -85,7 +85,6 @@ async def queue(ctx: Context):
 @bot.command(aliases=['p'])
 @commands.check(is_in_same_vc)
 async def play(ctx: Context, *args):
-    await join_voice(ctx)
     if len(args) == 0:
         if ctx.voice_client.is_paused():
             ctx.voice_client.resume()
@@ -135,7 +134,6 @@ async def resume(ctx: Context):
 @commands.check(is_in_same_vc)
 async def loop(ctx: Context, *args):
     global flg_loop
-    await join_voice(ctx)
     if len(args) == 0:
         flg_loop = not flg_loop
         await ctx.send('Looping: ' + str(flg_loop))
@@ -176,21 +174,18 @@ async def clear(ctx: Context):
 @bot.command()
 @commands.check(is_in_same_vc)
 async def rip(ctx: Context, *args):
-    await join_voice(ctx)
     url = ' '.join(args) + ' siivagunner'
     await play_song(ctx, url, song_queue)
 
 @bot.command(aliases=['h'])
 @commands.check(is_in_same_vc)
 async def _help(ctx: Context, *args):
-    await join_voice(ctx)
     url = 'yD2FSwTy2lw'
     await play_song(ctx, url, song_queue)
 
 @bot.command()
 @commands.check(is_in_same_vc)
 async def pc(ctx: Context, *args):
-    await join_voice(ctx)
     url = 'Z0DO0XyS8Ko'
     song = yt.extract_info(url)[0]
     await play_song(ctx, url, song_queue, metadata={'title':song['title'],'duration':song['duration']})
@@ -198,7 +193,6 @@ async def pc(ctx: Context, *args):
 @bot.command()
 @commands.check(is_in_same_vc)
 async def pcc(ctx: Context, *args):
-    await join_voice(ctx)
     url = '3H6QaUYVsVM' 
     song = yt.extract_info(url)[0]
     await play_song(ctx, url, song_queue, metadata={'title':song['title'],'duration':song['duration']})
@@ -247,6 +241,9 @@ def songEndEvent(ctx, song_queue):
 async def songStartEvent(ctx, song_queue):
     # global song_queue, current_status, flg_loop
     global flg_loop
+
+    # first, join voice channel 
+    await join_voice(ctx)
 
     # print('starting song...')
     #if song queue is empty
