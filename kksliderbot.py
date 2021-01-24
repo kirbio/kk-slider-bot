@@ -302,7 +302,7 @@ async def play_song(ctx, url, song_queue, loop=False, metadata=None):
         if len_before == 0:          
             await songStartEvent(ctx, song_queue)
         else:
-            await ctx.send(formatQueueing(song['title'], song['duration'], ctx.author, len(song_queue)-1, song['loop']))
+            await ctx.send(formatQueueing(song['title'], song['duration'], ctx.author.display_name, len(song_queue)-1, song['loop']))
 
     except:
         await ctx.send('Unexpected Error : ' + sys.exc_info()[0].__name__)
