@@ -6,6 +6,9 @@ HQRIP_COMMAND = 'rip'
 mapping = defaultdict(lambda: 'asterisk')
 mapping.update({0 : 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6:'six',7:'seven',8:'eight',9:'nine',10:'keycap_ten'})
 
+def parse_parameters(content):
+    return content.strip().split()[1:]
+
 def checkBotCommand(message,*commands):
     for command in commands:
         if message.content.split()[0] == BOT_PREFIX+command:
@@ -42,7 +45,7 @@ def formatQueueing(title, duration, dj, number, loop=False):
 def formatResponse(text):
     return '**{}**'.format(text.upper())
 
-def formatQueueList(song_queue, current_voice_channel, loop):
+def formatQueueList(song_queue, current_voice_channel):
 
     result = '**QUEUE LIST**\n'
     if not current_voice_channel.is_paused() and not current_voice_channel.is_playing():
@@ -51,12 +54,10 @@ def formatQueueList(song_queue, current_voice_channel, loop):
             result += formatQueueItem(s['title'], s['duration'], dj, i+1, s['loop'])
     else:
         s, dj = song_queue[0]
-        result += formatNowPlaying(s['title'], s['duration'], dj, loop, header=False)
+        result += formatNowPlaying(s['title'], s['duration'], dj, s['loop'], header=False)
         if len(song_queue) > 1:
             for i,x in enumerate(song_queue[1:]):
                 s,dj = x[0],x[1]
                 result += formatQueueItem(s['title'], s['duration'], dj, i+1, s['loop'])
     return result[:2000]
 
-def isAdminMessage(message):
-    return message.author.display_name in const.ADMIN_LIST
