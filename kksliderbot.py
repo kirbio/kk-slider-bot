@@ -116,14 +116,20 @@ async def skip(ctx: Context):
 @bot.command()
 @commands.check(is_in_same_vc)
 async def pause(ctx: Context):
-    ctx.voice_client.pause()
-    await ctx.send(formatResponse('Paused'))
+    if ctx.voice_client.is_playing():
+        ctx.voice_client.pause()
+        await ctx.send(formatResponse('Paused'))
+    else:
+        await ctx.send('Currently not played any songs')
 
 @bot.command()
 @commands.check(is_in_same_vc)
 async def resume(ctx: Context):
-    ctx.voice_client.resume()
-    await ctx.send(formatResponse('Resumed'))
+    if ctx.voice_client.is_paused():
+        ctx.voice_client.resume()
+        await ctx.send(formatResponse('Resumed'))
+    else:
+        await ctx.send('Currently not paused')
 
 @bot.command()
 @commands.check(is_in_same_vc)
@@ -224,16 +230,17 @@ async def songStartEvent(ctx, song_queue):
         print('loop this song')
         flg_loop = True
 
+    player = await yt.YTDLSource.from_url(song['id'],stream=True)
+    # print('playing: {} from {}'.format(player.title, dj))
+    ctx.bot.voice_clients[0].play(player, after=lambda e: songEndEvent(ctx, song_queue))
+
     async with ctx.channel.typing():
-        player = await yt.YTDLSource.from_url(song['id'],stream=True)
-        # print('playing: {} from {}'.format(player.title, dj))
-        ctx.bot.voice_clients[0].play(player, after=lambda e: songEndEvent(ctx, song_queue))
         await ctx.send(formatNowPlaying(song['title'], song['duration'], dj, flg_loop))
 
     # set bot status
     await ctx.bot.change_presence(status=Status.online, activity=Game(name=song['title']))
     
-async def play_song(ctx, url, song_queue, loop=False):
+async def play_song(ctx, url, song_queue, loop=False, metadata=None):
     try:
         print('queueing...')
         # await ctx.send('Queueing...',delete_after=3)
@@ -248,6 +255,9 @@ async def play_song(ctx, url, song_queue, loop=False):
         for song in song_list:
             print('queued', song['title'], song['duration'])
             song['loop'] = loop
+            if metadata:
+                for k,v in metadata.items():
+                    song[k] = v
             song_queue.append((song, ctx.author.display_name))
 
         if len(song_list) <= 0:
@@ -268,10 +278,10 @@ async def play_song(ctx, url, song_queue, loop=False):
         await ctx.send('Unexpected Error : ' + sys.exc_info()[0].__name__)
         print(traceback.print_exc())
 
-async def resumeEvent(channel):
-    current_voice_channel.resume()
-    await client.change_presence(status=Status.online, activity=current_status)
-    await channel.send(formatResponse('Resumed'))
+# async def resumeEvent(channel):
+#     current_voice_channel.resume()
+#     await client.change_presence(status=Status.online, activity=current_status)
+#     await channel.send(formatResponse('Resumed'))
 
 # @client.event
 # async def on_message(message):
