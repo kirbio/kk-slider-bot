@@ -1,5 +1,4 @@
 import discord
-import const
 import sys
 import traceback
 import asyncio
@@ -11,7 +10,8 @@ from discord import Status, Game, FFmpegPCMAudio
 
 from util import *
 from events import *
-
+from checks import *
+import const
 
 # client = discord.Client()
 
@@ -26,18 +26,6 @@ from discord.ext.commands import Bot, Context
 from discord.voice_client import VoiceClient
 
 bot = commands.Bot(command_prefix='!')
-
-
-def is_admin(ctx):
-    return ctx.author.display_name in const.ADMIN_LIST
-
-def is_in_same_vc(ctx):
-    if ctx.voice_client: # if bot has joined VC
-        if ctx.author.voice and ctx.author.voice.channel == ctx.voice_client.channel:
-            return True
-    else:
-        return True
-    return False
 
 @bot.event
 async def on_connect():
