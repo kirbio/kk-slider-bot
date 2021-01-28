@@ -113,13 +113,16 @@ class MusicEventHandler():
                 # queue a song / playlist
                 len_before = len(self.song_queue)
                 for song in song_list:
-                    print('queued', song['title'], song['duration'])
-                    song['loop'] = loop
+                    song_item = {'title':song['title'],
+                                 'duration':song['duration'],
+                                 'id':song['id'],
+                                 'loop':loop}
+                    print('queued', song_item['title'], song_item['duration'])
                     if metadata:
                         for k,v in metadata.items():
-                            song[k] = v
-                    self.song_queue.append((song, ctx.author.display_name))
-                    print(song)
+                            song_item[k] = v
+                    self.song_queue.append((song_item, ctx.author.display_name))
+                    print(song_item)
                        
             if len(song_list) <= 0:
                 await ctx.send('Playlist is empty')
@@ -131,7 +134,7 @@ class MusicEventHandler():
             if len_before == 0:     #if queue empty before, start now          
                 await self.songStartEvent(ctx)
             else:                   #else send a queue message
-                await ctx.send(formatQueueing(song['title'], song['duration'], ctx.author.display_name, len(self.song_queue)-1, song['loop']))
+                await ctx.send(formatQueueing(song_item['title'], song_item['duration'], ctx.author.display_name, len(self.song_queue)-1, song_item['loop']))
 
         except:
             await ctx.send('Unexpected Error : ' + sys.exc_info()[0].__name__)
