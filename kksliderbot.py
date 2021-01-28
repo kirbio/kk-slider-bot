@@ -128,7 +128,7 @@ async def now_playing(ctx: Context):
 @commands.check(is_in_same_vc)
 async def pop(ctx: Context, index: int = -1):
     if len(handler.song_queue) > 1:
-        song, dj = handler.pop_queue()
+        song, dj = handler.pop_queue(index)
         await ctx.send('Removed {} from {}'.format(song['title'], dj))
     else:
         await ctx.send('No song in queue log')
