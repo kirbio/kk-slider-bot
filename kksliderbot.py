@@ -37,17 +37,18 @@ async def on_ready():
 
 @bot.event
 async def on_command_error(ctx, error):
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send('You have to be in the same VC as the bot.')
-    else:
+    if isinstance(error, commands.MissingRole):
+        await ctx.send(error)
+    elif isinstance(error, commands.CheckFailure):
         print(error)
+        await ctx.send('You have to be in the same VC as the bot.')
 
 @bot.command()
 async def ping(ctx: Context):
     await ctx.send("Pong")
 
 @bot.command(name='dc')
-@commands.check(is_admin)
+@commands.has_role('admin')
 async def disconnect(ctx: Context):
     await bot.change_presence(status=discord.Status.offline, activity=None)
     if bot.voice_clients:
@@ -135,7 +136,7 @@ async def pop(ctx: Context, index: int = -1):
         await ctx.send('No song in queue log')
 
 @bot.command()
-@commands.check(is_admin)
+@commands.has_role('admin')
 async def clear(ctx: Context):
     print('clearing queue...')
     handler.set_loop(False)
