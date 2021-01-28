@@ -1,19 +1,14 @@
-import const
-from collections import defaultdict
-
-BOT_PREFIX = '!'
-HQRIP_COMMAND = 'rip'
-mapping = defaultdict(lambda: 'asterisk')
-mapping.update({0 : 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6:'six',7:'seven',8:'eight',9:'nine',10:'keycap_ten'})
-
-def parse_parameters(content):
-    return content.strip().split()[1:]
-
-def checkBotCommand(message,*commands):
-    for command in commands:
-        if message.content.split()[0] == BOT_PREFIX+command:
-           return True
-    return False
+mapping = {0 : 'zero', 
+           1: 'one', 
+           2: 'two', 
+           3: 'three', 
+           4: 'four', 
+           5: 'five', 
+           6:'six',
+           7:'seven',
+           8:'eight',
+           9:'nine',
+           10:'keycap_ten'}
 
 def formatDuration(t):
     if type(t) == float:
@@ -21,8 +16,7 @@ def formatDuration(t):
     return '{}:{:02d}'.format(t//60,t%60)
 
 def formatNumber(number):
-    global mapping
-    return mapping[number]
+    return mapping[number] if number in mapping else 'asterisk'
 
 def formatNowPlaying(title, duration, dj, loop=False, header=True):
     result = ''
