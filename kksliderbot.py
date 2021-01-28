@@ -1,4 +1,5 @@
 import asyncio
+from cogs.memes import Memes
 import sys
 import traceback
 
@@ -144,5 +145,8 @@ async def clear(ctx: Context):
         handler.clear_queue()
         await asyncio.sleep(5)
     await ctx.send(formatResponse('Cleared Queue'))     
+
+# cogs
+bot.add_cog(Memes(bot, handler))
 
 bot.run(const.BOT_TOKEN)
