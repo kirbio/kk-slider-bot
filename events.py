@@ -95,8 +95,7 @@ class MusicEventHandler():
         # print('playing: {} from {}'.format(player.title, dj))
         ctx.bot.voice_clients[0].play(player, after=lambda e: self.songEndEvent(ctx))
 
-        async with ctx.channel.typing():
-            await ctx.send(formatNowPlaying(song['title'], song['duration'], dj, self.flg_loop))
+        await ctx.send(formatNowPlaying(song['title'], song['duration'], dj, self.flg_loop))
 
         # set bot status
         await ctx.bot.change_presence(status=Status.online, activity=Game(name=song['title']))
@@ -105,35 +104,33 @@ class MusicEventHandler():
         try:
             print('queueing...')
             # await ctx.send('Queueing...',delete_after=3)
-
-            song_list = yt.extract_info(url)
-            '''
-            song keys : (['id', 'uploader', 'uploader_id', 'uploader_url', 'channel_id', 'channel_url', 'upload_date', 'license', 'creator', 'title', 'alt_title', 'thumbnails', 'description', 'categories', 'tags', 'subtitles', 'automatic_captions', 'duration', 'age_limit', 'annotations', 'chapters', 'webpage_url', 'view_count', 'like_count', 'dislike_count', 'average_rating', 'formats', 'is_live', 'start_time', 'end_time', 'series', 'season_number', 'episode_number', 'track', 'artist', 'album', 'release_date', 'release_year', 'extractor', 'webpage_url_basename', 'extractor_key', 'n_entries', 'playlist', 'playlist_id', 'playlist_title', 'playlist_uploader', 'playlist_uploader_id', 'playlist_index', 'thumbnail', 'display_id', 'requested_subtitles', 'format_id', 'url', 'player_url', 'ext', 'format_note', 'acodec', 'abr', 'container', 'asr', 'filesize', 'fps', 'height', 'tbr', 'width', 'vcodec', 'downloader_options', 'format', 'protocol', 'http_headers'])
-            '''
-            
-            # queue a song / playlist
-            len_before = len(self.song_queue)
-            for song in song_list:
-                print('queued', song['title'], song['duration'])
-                song['loop'] = loop
-                if metadata:
-                    for k,v in metadata.items():
-                        song[k] = v
-                self.song_queue.append((song, ctx.author.display_name))
-                print(song)
-
+            async with ctx.channel.typing():
+                song_list = yt.extract_info(url)
+                '''
+                song keys : (['id', 'uploader', 'uploader_id', 'uploader_url', 'channel_id', 'channel_url', 'upload_date', 'license', 'creator', 'title', 'alt_title', 'thumbnails', 'description', 'categories', 'tags', 'subtitles', 'automatic_captions', 'duration', 'age_limit', 'annotations', 'chapters', 'webpage_url', 'view_count', 'like_count', 'dislike_count', 'average_rating', 'formats', 'is_live', 'start_time', 'end_time', 'series', 'season_number', 'episode_number', 'track', 'artist', 'album', 'release_date', 'release_year', 'extractor', 'webpage_url_basename', 'extractor_key', 'n_entries', 'playlist', 'playlist_id', 'playlist_title', 'playlist_uploader', 'playlist_uploader_id', 'playlist_index', 'thumbnail', 'display_id', 'requested_subtitles', 'format_id', 'url', 'player_url', 'ext', 'format_note', 'acodec', 'abr', 'container', 'asr', 'filesize', 'fps', 'height', 'tbr', 'width', 'vcodec', 'downloader_options', 'format', 'protocol', 'http_headers'])
+                '''
+                
+                # queue a song / playlist
+                len_before = len(self.song_queue)
+                for song in song_list:
+                    print('queued', song['title'], song['duration'])
+                    song['loop'] = loop
+                    if metadata:
+                        for k,v in metadata.items():
+                            song[k] = v
+                    self.song_queue.append((song, ctx.author.display_name))
+                    print(song)
+                       
             if len(song_list) <= 0:
                 await ctx.send('Playlist is empty')
                 return
-
+            
             #garbage collection
             del song_list
 
-            #if queue empty before, start now
-            #else send a queue message
-            if len_before == 0:          
+            if len_before == 0:     #if queue empty before, start now          
                 await self.songStartEvent(ctx)
-            else:
+            else:                   #else send a queue message
                 await ctx.send(formatQueueing(song['title'], song['duration'], ctx.author.display_name, len(self.song_queue)-1, song['loop']))
 
         except:
