@@ -1,31 +1,24 @@
-import discord
+import asyncio
 import sys
 import traceback
-import asyncio
-import youtubestreaming as yt
-from youtube_dl.utils import DownloadError
-from discord.ext.commands.errors import CommandInvokeError
-from discord import Status, Game, FFmpegPCMAudio
 
-
-from util import *
-from events import *
-from checks import *
-import const
-
-# client = discord.Client()
-
-current_voice_channel = None
-current_status = None
-song_queue = []
-flg_stop = False
-flg_loop = False
-
+import discord
+from discord import FFmpegPCMAudio, Game, Status
 from discord.ext import commands
 from discord.ext.commands import Bot, Context
+from discord.ext.commands.errors import CommandInvokeError
 from discord.voice_client import VoiceClient
+from youtube_dl.utils import DownloadError
+
+import const
+import youtubestreaming as yt
+from checks import *
+from events import *
+from events import MusicEventHandler
+from util import *
 
 bot = commands.Bot(command_prefix='!')
+handler = MusicEventHandler(bot)
 
 @bot.event
 async def on_connect():
@@ -33,11 +26,9 @@ async def on_connect():
     # client.loop.create_task(sync_db())
     print('Connected')
 
-
 @bot.event
 async def on_disconnect():
     print('Disconnected')
-
 
 @bot.event
 async def on_ready():
@@ -54,7 +45,6 @@ async def on_command_error(ctx, error):
 async def ping(ctx: Context):
     await ctx.send("Pong")
 
-
 @bot.command(name='dc')
 @commands.check(is_admin)
 async def disconnect(ctx: Context):
@@ -65,10 +55,10 @@ async def disconnect(ctx: Context):
 
 @bot.command(aliases=['q', 'ls', 'list'])
 async def queue(ctx: Context):
-    if len(song_queue) == 0:
+    if len(handler.song_queue) == 0:
         await ctx.send("`The song queue is empty`")
     else:
-        await ctx.send(formatQueueList(song_queue, ctx.voice_client))
+        await ctx.send(formatQueueList(handler.song_queue, ctx.voice_client))
 
 @bot.command(aliases=['p'])
 @commands.check(is_in_same_vc)
@@ -79,25 +69,23 @@ async def play(ctx: Context, *args):
         elif ctx.voice_client.is_playing():
             await ctx.send('Already playing an audio')
         else:
-            await songStartEvent(ctx, song_queue)
+            await handler.songStartEvent(ctx)
     else:
         url = ' '.join(args)
-        await play_song(ctx, url, song_queue)
+        await handler.play_song(ctx, url)
 
 @bot.command()
 @commands.check(is_in_same_vc)
 async def stop(ctx: Context):
-    global flg_stop
-    flg_stop = True
+    handler.set_stop(True)
     ctx.voice_client.stop()
     await ctx.send(formatResponse('Stopped'))
 
 @bot.command(aliases=['sk'])
 @commands.check(is_in_same_vc)
 async def skip(ctx: Context):
-    global flg_loop
     ctx.voice_client.stop()
-    flg_loop = False
+    handler.set_loop(False)
     await ctx.send(formatResponse('Skipped'))
 
 @bot.command()
@@ -121,27 +109,26 @@ async def resume(ctx: Context):
 @bot.command()
 @commands.check(is_in_same_vc)
 async def loop(ctx: Context, *args):
-    global flg_loop
     if len(args) == 0:
-        flg_loop = not flg_loop
-        await ctx.send('Looping: ' + str(flg_loop))
+        handler.toggle_loop()
+        await ctx.send('Looping: ' + str(handler.flg_loop))
     else:
         url = ' '.join(args)
-        await play_song(ctx, url, song_queue, loop=True)
+        await handler.play_song(ctx, url, loop=True)
 
 @bot.command(aliases=['now','np'])
 async def now_playing(ctx: Context):
-    if len(song_queue) > 0:
-        song, dj = song_queue[0]
-        await ctx.send(formatNowPlaying(song['title'], song['duration'], dj, flg_loop))
+    if len(handler.song_queue) > 0:
+        song, dj = handler.get_top_song()
+        await ctx.send(formatNowPlaying(song['title'], song['duration'], dj, handler.flg_loop))
     else:
         await ctx.send('Currently not playing any song')
 
 @bot.command(aliases=['rm', 'dq', 'undo'])
 @commands.check(is_in_same_vc)
 async def pop(ctx: Context, index: int = -1):
-    if len(song_queue) > 1:
-        song, dj = song_queue.pop(index)
+    if len(handler.song_queue) > 1:
+        song, dj = handler.pop_queue()
         await ctx.send('Removed {} from {}'.format(song['title'], dj))
     else:
         await ctx.send('No song in queue log')
@@ -149,148 +136,13 @@ async def pop(ctx: Context, index: int = -1):
 @bot.command()
 @commands.check(is_admin)
 async def clear(ctx: Context):
-    flg_stop = True
-    flg_loop = False
+    print('clearing queue...')
+    handler.set_loop(False)
+    handler.set_stop(True)
     async with ctx.channel.typing():
         ctx.voice_client.stop()
-        while len(song_queue) > 0:
-            song_queue.pop()
-
+        handler.clear_queue()
+        await asyncio.sleep(5)
     await ctx.send(formatResponse('Cleared Queue'))     
-
-# MEME
-@bot.command()
-@commands.check(is_in_same_vc)
-async def rip(ctx: Context, *args):
-    url = ' '.join(args) + ' siivagunner'
-    await play_song(ctx, url, song_queue)
-
-@bot.command(aliases=['h'])
-@commands.check(is_in_same_vc)
-async def _help(ctx: Context, *args):
-    url = 'yD2FSwTy2lw'
-    await play_song(ctx, url, song_queue)
-
-@bot.command()
-@commands.check(is_in_same_vc)
-async def pc(ctx: Context, *args):
-    url = 'Z0DO0XyS8Ko'
-    song = yt.extract_info(url)[0]
-    await play_song(ctx, url, song_queue, metadata={'title':song['title'],'duration':song['duration']})
-
-@bot.command()
-@commands.check(is_in_same_vc)
-async def pcc(ctx: Context, *args):
-    url = '3H6QaUYVsVM' 
-    song = yt.extract_info(url)[0]
-    await play_song(ctx, url, song_queue, metadata={'title':song['title'],'duration':song['duration']})
-
-#Join voice channel if it has not, otherwise do nothing.
-async def join_voice(ctx):
-    if ctx.voice_client is None:
-        if ctx.author.voice:
-            channel = ctx.author.voice.channel
-            voice_client = await channel.connect()
-            print(voice_client.channel)
-        else:
-            ctx.send("You are not connecting to VC right now.")
-    else:
-        print("Already connected to a voice channel")
-
-def songEndEvent(ctx, song_queue):
-    # global song_queue, flg_stop, flg_loop, client
-    global flg_stop, flg_loop
-
-    print('ending song...')
-
-    asyncio.run_coroutine_threadsafe(ctx.bot.change_presence(status=Status.idle, activity=None), ctx.bot.loop)
-
-    if not flg_loop or flg_stop:
-        if len(song_queue) > 0:
-            curr_song = song_queue.pop(0)  
-            print('removed first item in queue')
-    else:
-        print('looping...')
-
-    print(len(song_queue))
-
-    #if manually called stop, stop advancing the queue, too.
-    if flg_stop:
-        print('force stop')
-        flg_stop = False
-        return
-
-    #if song queue is empty
-    if not song_queue:
-        return
-    # print('song start from song end')
-    asyncio.run_coroutine_threadsafe(songStartEvent(ctx, song_queue), ctx.bot.loop)
-
-async def songStartEvent(ctx, song_queue):
-    # global song_queue, current_status, flg_loop
-    global flg_loop
-
-    # first, join voice channel 
-    await join_voice(ctx)
-
-    # print('starting song...')
-    #if song queue is empty
-    if not song_queue:
-        await ctx.send('Please queue up some songs first!')
-        return
-
-    song, dj = song_queue[0]
-    print('playing...',song['title'], song['id'])
-    if song['loop']:
-        print('loop this song')
-        flg_loop = True
-
-    player = await yt.YTDLSource.from_url(song['id'],stream=True)
-    # print('playing: {} from {}'.format(player.title, dj))
-    ctx.bot.voice_clients[0].play(player, after=lambda e: songEndEvent(ctx, song_queue))
-
-    async with ctx.channel.typing():
-        await ctx.send(formatNowPlaying(song['title'], song['duration'], dj, flg_loop))
-
-    # set bot status
-    await ctx.bot.change_presence(status=Status.online, activity=Game(name=song['title']))
-    
-async def play_song(ctx, url, song_queue, loop=False, metadata=None):
-    try:
-        print('queueing...')
-        # await ctx.send('Queueing...',delete_after=3)
-
-        song_list = yt.extract_info(url)
-        '''
-        song keys : (['id', 'uploader', 'uploader_id', 'uploader_url', 'channel_id', 'channel_url', 'upload_date', 'license', 'creator', 'title', 'alt_title', 'thumbnails', 'description', 'categories', 'tags', 'subtitles', 'automatic_captions', 'duration', 'age_limit', 'annotations', 'chapters', 'webpage_url', 'view_count', 'like_count', 'dislike_count', 'average_rating', 'formats', 'is_live', 'start_time', 'end_time', 'series', 'season_number', 'episode_number', 'track', 'artist', 'album', 'release_date', 'release_year', 'extractor', 'webpage_url_basename', 'extractor_key', 'n_entries', 'playlist', 'playlist_id', 'playlist_title', 'playlist_uploader', 'playlist_uploader_id', 'playlist_index', 'thumbnail', 'display_id', 'requested_subtitles', 'format_id', 'url', 'player_url', 'ext', 'format_note', 'acodec', 'abr', 'container', 'asr', 'filesize', 'fps', 'height', 'tbr', 'width', 'vcodec', 'downloader_options', 'format', 'protocol', 'http_headers'])
-        '''
-
-        # queue a song / playlist
-        len_before = len(song_queue)
-        for song in song_list:
-            print('queued', song['title'], song['duration'])
-            song['loop'] = loop
-            if metadata:
-                for k,v in metadata.items():
-                    song[k] = v
-            song_queue.append((song, ctx.author.display_name))
-
-        if len(song_list) <= 0:
-            await ctx.send('Playlist is empty')
-            return
-
-        #garbage collection
-        del song_list
-
-        #if queue empty before, start now
-        #else send a queue message
-        if len_before == 0:          
-            await songStartEvent(ctx, song_queue)
-        else:
-            await ctx.send(formatQueueing(song['title'], song['duration'], ctx.author.display_name, len(song_queue)-1, song['loop']))
-
-    except:
-        await ctx.send('Unexpected Error : ' + sys.exc_info()[0].__name__)
-        print(traceback.print_exc())
 
 bot.run(const.BOT_TOKEN)
