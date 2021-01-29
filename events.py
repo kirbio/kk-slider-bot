@@ -89,7 +89,7 @@ class MusicEventHandler():
             await ctx.send('Please queue up some songs first!')
             return
 
-        song, dj = self.song_queue[0]
+        song = self.song_queue[0]
         print('playing...',song['title'], song['id'])
         if song['loop']:
             print('loop this song')
@@ -99,7 +99,7 @@ class MusicEventHandler():
         # print('playing: {} from {}'.format(player.title, dj))
         ctx.bot.voice_clients[0].play(player, after=lambda e: self.songEndEvent(ctx))
 
-        await ctx.send(formatNowPlaying(song['title'], song['duration'], dj, self.flg_loop))
+        await ctx.send(formatNowPlaying(song['title'], song['duration'], song['dj'], self.flg_loop))
 
         # set bot status
         await ctx.bot.change_presence(status=Status.online, activity=Game(name=song['title']))
@@ -120,15 +120,16 @@ class MusicEventHandler():
                 song_item = {'title':s['title'],
                             'duration':s['duration'],
                             'id':s['id'],
+                            'dj':ctx.author.display_name,
                             'loop':loop}
                 if metadata:
                     for k,v in metadata.items():
                         song_item[k] = v
-                self.song_queue.append((song_item, ctx.author.display_name))
+                self.song_queue.append(song_item)
                 print(song_item)
             del songs #garbage collection
 
         if len_before == 0:     #if queue empty before, start now          
             await self.songStartEvent(ctx)
         else:                   #else send a queue message
-            await ctx.send(formatQueueing(song_item['title'], song_item['duration'], ctx.author.display_name, len(self.song_queue)-1, song_item['loop']))
+            await ctx.send(formatQueueing(song_item['title'], song_item['duration'], song_item['dj'], len(self.song_queue)-1, song_item['loop']))

@@ -132,8 +132,8 @@ async def loop(ctx: Context, *args):
 @bot.command(aliases=['now','np'])
 async def now_playing(ctx: Context):
     if len(handler.song_queue) > 0:
-        song, dj = handler.get_top_song()
-        await ctx.send(formatNowPlaying(song['title'], song['duration'], dj, handler.flg_loop))
+        song = handler.get_top_song()
+        await ctx.send(formatNowPlaying(song['title'], song['duration'], song['dj'], handler.flg_loop))
     else:
         await ctx.send('Currently not playing any song')
 
@@ -141,8 +141,8 @@ async def now_playing(ctx: Context):
 @commands.check(is_in_same_vc)
 async def pop(ctx: Context, index: int = -1):
     if len(handler.song_queue) > 1:
-        song, dj = handler.pop_queue(index)
-        await ctx.send('Removed {} from {}'.format(song['title'], dj))
+        song= handler.pop_queue(index)
+        await ctx.send('Removed {} from {}'.format(song['title'], song['dj']))
     else:
         await ctx.send('No song in queue log. To skip current song, use `skip`')
 
