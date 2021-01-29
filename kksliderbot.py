@@ -39,13 +39,21 @@ async def on_ready():
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRole):
         await ctx.send(error)
+    elif isinstance(error, asyncio.TimeoutError):
+        await ctx.send("The bot couldn't connect to the voice channel you're in")
     elif isinstance(error, commands.CheckFailure):
         print(error)
-        await ctx.send('You have to be in the same VC as the bot.')
+        await ctx.send(error)
+    else:
+        print(error)
+        await ctx.send(error)
 
 @bot.command()
 async def ping(ctx: Context):
     await ctx.send("Pong")
+    print(ctx.voice_client)
+    print(ctx.bot.voice_clients)
+    print(bot.voice_clients)
 
 @bot.command(name='dc')
 @commands.has_role('admin')
@@ -66,11 +74,11 @@ async def queue(ctx: Context):
 @commands.check(is_in_same_vc)
 async def play(ctx: Context, *args):
     if len(args) == 0:
-        if ctx.voice_client.is_paused():
+        if is_paused(ctx): # resume if song is paused
             ctx.voice_client.resume()
-        elif ctx.voice_client.is_playing():
-            await ctx.send('Already playing an audio')
-        else:
+        elif is_playing_song(ctx): # throw error if song is already playing
+            raise SongNotPaused()
+        else: # else (stopped), start next song in queue immediately
             await handler.songStartEvent(ctx)
     else:
         url = ' '.join(args)
@@ -79,34 +87,37 @@ async def play(ctx: Context, *args):
 @bot.command()
 @commands.check(is_in_same_vc)
 async def stop(ctx: Context):
-    handler.set_stop(True)
-    ctx.voice_client.stop()
-    await ctx.send(formatResponse('Stopped'))
+    if ctx.voice_client:
+        handler.set_stop(True)
+        ctx.voice_client.stop()
+        await ctx.send(formatResponse('Stopped'))
+    else:
+        await ctx.send('No song to stop')
+        
 
 @bot.command(aliases=['sk'])
 @commands.check(is_in_same_vc)
 async def skip(ctx: Context):
-    ctx.voice_client.stop()
-    handler.set_loop(False)
-    await ctx.send(formatResponse('Skipped'))
+    if ctx.voice_client:
+        handler.set_loop(False)
+        ctx.voice_client.stop()
+        await ctx.send(formatResponse('Skipped'))
+    else:
+        await ctx.send('No song to skip')
 
 @bot.command()
 @commands.check(is_in_same_vc)
+@commands.check(check_is_playing_song)
 async def pause(ctx: Context):
-    if ctx.voice_client.is_playing():
-        ctx.voice_client.pause()
-        await ctx.send(formatResponse('Paused'))
-    else:
-        await ctx.send('Currently not played any songs')
+    ctx.voice_client.pause()
+    await ctx.send(formatResponse('Paused'))
 
 @bot.command()
 @commands.check(is_in_same_vc)
+@commands.check(check_is_paused)
 async def resume(ctx: Context):
-    if ctx.voice_client.is_paused():
-        ctx.voice_client.resume()
-        await ctx.send(formatResponse('Resumed'))
-    else:
-        await ctx.send('Currently not paused')
+    ctx.voice_client.resume()
+    await ctx.send(formatResponse('Resumed'))
 
 @bot.command()
 @commands.check(is_in_same_vc)
@@ -142,7 +153,8 @@ async def clear(ctx: Context):
     handler.set_loop(False)
     handler.set_stop(True)
     async with ctx.channel.typing():
-        ctx.voice_client.stop()
+        if ctx.voice_client:
+            ctx.voice_client.stop()
         handler.clear_queue()
         await asyncio.sleep(5)
     await ctx.send(formatResponse('Cleared Queue'))     
