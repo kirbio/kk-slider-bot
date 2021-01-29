@@ -144,7 +144,7 @@ async def pop(ctx: Context, index: int = -1):
         song, dj = handler.pop_queue(index)
         await ctx.send('Removed {} from {}'.format(song['title'], dj))
     else:
-        await ctx.send('No song in queue log')
+        await ctx.send('No song in queue log. To skip current song, use `skip`')
 
 @bot.command()
 @commands.has_role('admin')

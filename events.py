@@ -4,6 +4,7 @@ import traceback
 
 from discord import Game, Status, VoiceChannel
 from discord.ext.commands import Context
+from discord.ext.commands.errors import CommandError
 
 import youtubestreaming as yt
 from util import *
@@ -30,7 +31,11 @@ class MusicEventHandler():
         return self.song_queue[0] if len(self.song_queue) > 0 else None
     
     def pop_queue(self, index=-1):
+        size = len(self.song_queue)
+        if 1 <= index < size or index == -1: # Index can't be 0 (current song)
             return self.song_queue.pop(index)
+        else:
+            raise CommandError('Index out of range')
 
     def clear_queue(self):
         while len(self.song_queue) > 0:
