@@ -2,7 +2,7 @@ import asyncio
 import sys
 import traceback
 
-from discord import Game, Status
+from discord import Game, Status, VoiceChannel
 from discord.ext.commands import Context
 
 import youtubestreaming as yt
@@ -30,8 +30,8 @@ class MusicEventHandler():
         return self.song_queue[0] if len(self.song_queue) > 0 else None
     
     def pop_queue(self, index=-1):
-        return self.song_queue.pop(index)
-    
+            return self.song_queue.pop(index)
+
     def clear_queue(self):
         while len(self.song_queue) > 0:
             self.song_queue.pop()
@@ -40,9 +40,8 @@ class MusicEventHandler():
     async def join_voice(self, ctx: Context):
         if ctx.voice_client is None:
             if ctx.author.voice:
-                channel = ctx.author.voice.channel
-                voice_client = await channel.connect()
-                print(voice_client.channel)
+                channel: VoiceChannel = ctx.author.voice.channel
+                await channel.connect(timeout=10)
             else:
                 ctx.send("You are not connecting to VC right now.")
         else:
@@ -100,36 +99,31 @@ class MusicEventHandler():
         # set bot status
         await ctx.bot.change_presence(status=Status.online, activity=Game(name=song['title']))
         
-    async def play_song(self, ctx: Context, url, loop=False, metadata=None):
-        try:
-            print('queueing...')
-            await ctx.send('Queueing...',delete_after=2)
-            async with ctx.channel.typing():
-                songs = yt.extract_info(url)              
-                len_before = len(self.song_queue)
-        
-                if len(songs) <= 0:
-                    await ctx.send('No videos found')
-                    return
-                
-                # queue a song / playlist
-                for s in songs:
-                    song_item = {'title':s['title'],
-                                'duration':s['duration'],
-                                'id':s['id'],
-                                'loop':loop}
-                    if metadata:
-                        for k,v in metadata.items():
-                            song_item[k] = v
-                    self.song_queue.append((song_item, ctx.author.display_name))
-                    print(song_item)
-                del songs #garbage collection
+    async def play_song(self, ctx: Context, url, loop=False, metadata=None):  
+        print('queueing...')
+        await ctx.send('Queueing...',delete_after=2)
+        async with ctx.channel.typing():
+            songs = yt.extract_info(url)              
+            len_before = len(self.song_queue)
+    
+            if len(songs) <= 0:
+                await ctx.send('No videos found')
+                return
+            
+            # queue a song / playlist
+            for s in songs:
+                song_item = {'title':s['title'],
+                            'duration':s['duration'],
+                            'id':s['id'],
+                            'loop':loop}
+                if metadata:
+                    for k,v in metadata.items():
+                        song_item[k] = v
+                self.song_queue.append((song_item, ctx.author.display_name))
+                print(song_item)
+            del songs #garbage collection
 
-            if len_before == 0:     #if queue empty before, start now          
-                await self.songStartEvent(ctx)
-            else:                   #else send a queue message
-                await ctx.send(formatQueueing(song_item['title'], song_item['duration'], ctx.author.display_name, len(self.song_queue)-1, song_item['loop']))
-
-        except:
-            await ctx.send('Unexpected Error : ' + sys.exc_info()[0].__name__)
-            print(traceback.print_exc())
+        if len_before == 0:     #if queue empty before, start now          
+            await self.songStartEvent(ctx)
+        else:                   #else send a queue message
+            await ctx.send(formatQueueing(song_item['title'], song_item['duration'], ctx.author.display_name, len(self.song_queue)-1, song_item['loop']))
