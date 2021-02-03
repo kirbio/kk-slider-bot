@@ -1,3 +1,5 @@
+import getopt
+
 mapping = {0 : 'zero', 
            1: 'one', 
            2: 'two', 
@@ -53,3 +55,13 @@ def formatQueueList(song_queue, current_voice_channel):
                 result += formatQueueItem(s['title'], s['duration'], s['dj'], i+1, s['loop'])
     return result[:2000]
 
+def parse_arguments(args):
+    '''
+    optlist
+    -s S    playback speed
+    '''
+    optlist, args = getopt.gnu_getopt(args, 's:')
+    for k,v in optlist:
+        if k == '-s':
+            assert 0.5 <= float(v) <= 2.0, 'Speed must be between 0.5 and 2.0'
+    return optlist, args

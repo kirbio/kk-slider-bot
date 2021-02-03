@@ -95,7 +95,7 @@ class MusicEventHandler():
             print('loop this song')
             self.flg_loop = True
 
-        player = await yt.YTDLSource.from_url(song['id'],stream=True)
+        player = await yt.YTDLSource.from_url(song['id'],stream=True,options=song['opt'])
         # print('playing: {} from {}'.format(player.title, dj))
         ctx.bot.voice_clients[0].play(player, after=lambda e: self.songEndEvent(ctx))
 
@@ -104,7 +104,7 @@ class MusicEventHandler():
         # set bot status
         await ctx.bot.change_presence(status=Status.online, activity=Game(name=song['title']))
         
-    async def play_song(self, ctx: Context, url, loop=False, metadata=None):  
+    async def play_song(self, ctx: Context, url, loop=False, metadata=None, opt=None):  
         print('queueing...')
         await ctx.send('Queueing...',delete_after=2)
         async with ctx.channel.typing():
@@ -121,6 +121,7 @@ class MusicEventHandler():
                             'duration':s['duration'],
                             'id':s['id'],
                             'dj':ctx.author.display_name,
+                            'opt':opt,
                             'loop':loop}
                 if metadata:
                     for k,v in metadata.items():

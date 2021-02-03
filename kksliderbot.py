@@ -81,8 +81,9 @@ async def play(ctx: Context, *args):
         else: # else (stopped), start next song in queue immediately
             await handler.songStartEvent(ctx)
     else:
+        opt, args = parse_arguments(args)
         url = ' '.join(args)
-        await handler.play_song(ctx, url)
+        await handler.play_song(ctx, url, opt=opt)
 
 @bot.command()
 @commands.check(is_in_same_vc)
@@ -126,8 +127,9 @@ async def loop(ctx: Context, *args):
         handler.toggle_loop()
         await ctx.send('Looping: ' + str(handler.flg_loop))
     else:
+        opt, args = parse_arguments(args)
         url = ' '.join(args)
-        await handler.play_song(ctx, url, loop=True)
+        await handler.play_song(ctx, url, opt=opt, loop=True)
 
 @bot.command(aliases=['now','np'])
 async def now_playing(ctx: Context):
