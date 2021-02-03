@@ -1,6 +1,4 @@
 import asyncio
-import sys
-import traceback
 
 from discord import Game, Status, VoiceChannel
 from discord.ext.commands import Context
