@@ -56,11 +56,7 @@ def formatQueueList(song_queue, current_voice_channel):
     return result[:2000]
 
 def parse_arguments(args):
-    '''
-    optlist
-    -s S    playback speed
-    '''
-    optlist, args = getopt.gnu_getopt(args, 's:')
+    optlist, args = getopt.gnu_getopt(args, 's:r')
     for k,v in optlist:
         if k == '-s':
             assert 0.5 <= float(v) <= 2.0, 'Speed must be between 0.5 and 2.0'

@@ -44,8 +44,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        if options:
-            ffmpeg_options['options'] = parse_ffmpeg_options(options)
+        ffmpeg_options['options'] = parse_ffmpeg_options(options)
         print(ffmpeg_options['options'])
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
@@ -60,9 +59,20 @@ def extract_info(url):
         # data = data['entries'][0]
     return [data]
 
-def parse_ffmpeg_options(options):
+def parse_ffmpeg_options(options=None):
+    '''
+    optlist
+    -s S    playback speed
+    -r      reverse
+    '''
     opt_str = '-vn '
-    for k,v in options:
-        if k == '-s':
-            opt_str += '-filter:a "atempo={}"'.format(v)
+    if options:
+        opt_str += '-filter:a '
+        filter = []
+        for k,v in options:
+            if k == '-s':
+                filter.append('atempo={}'.format(v))
+            if k == '-r':
+                filter.append('areverse')
+        opt_str += ','.join(filter)
     return opt_str
