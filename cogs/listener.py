@@ -29,6 +29,6 @@ class BotEventListener(commands.Cog):
             print(error)
             await ctx.send(error)
         else:
-            print(error)
+            print(error, type(error))
             await ctx.send(error)
         
