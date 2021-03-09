@@ -4,7 +4,7 @@ from discord.ext.commands import Context
 
 class BasicCommands(commands.Cog, name='General'):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: commands.Bot = bot
         
     @commands.command()
     async def ping(self, ctx: Context):
@@ -20,3 +20,13 @@ class BasicCommands(commands.Cog, name='General'):
         if self.bot.voice_clients:
             await self.bot.voice_clients[0].disconnect()
         await self.bot.logout()
+        
+    @commands.command(hidden=True)
+    @commands.has_role('admin')
+    async def disable(self, ctx: Context, cmd):
+        self.bot.get_command(cmd).enabled = False
+        
+    @commands.command(hidden=True)
+    @commands.has_role('admin')
+    async def enable(self, ctx: Context, cmd):
+        self.bot.get_command(cmd).enabled = True
